@@ -40,7 +40,6 @@ outputs:
 
 ## Core Features
 
-- **Schema-Driven Design:** Every capability follows a strict JSON schema ensuring consistency and validation
 - **Composability:** Build complex workflows from simple atomic capabilities
 - **Version Control:** Built-in versioning for capabilities and their dependencies
 - **Task Orchestration:** Structured flow control for executing multiple tasks
@@ -94,9 +93,10 @@ tasks:
 ### Task Types
 
 - `script`: Execute code in specified language
-- `request`: Make HTTP/API calls
-- `action`: Perform system actions
+
 - Additional types can be defined as needed
+- `request`: Make HTTP/API calls
+- `prompt`: feeds a prompt to an llm
 
 ### Flow Control
 
@@ -106,10 +106,6 @@ The flow section defines how tasks are executed:
 flow:
   steps:
     - task: taskId        # Reference to task
-      timeout: number     # Optional timeout
-      retries: number    # Optional retry count
-      dependencies:      # Optional dependencies
-        - otherTaskId
 ```
 
 ### Parameter Management
@@ -144,11 +140,6 @@ outputs:
    - Define clear dependencies
    - Handle task failures gracefully
    - Document the workflow clearly
-
-3. **Version Management**
-   - Use semantic versioning
-   - Document breaking changes
-   - Maintain backward compatibility when possible
 
 ## License
 
