@@ -90,13 +90,15 @@ tasks:
     code: string         # Implementation
 ```
 
+![Enact Flow](diagram.png)
+
 ### Task Types
 
 - `script`: Execute code in specified language
 
-- Additional types can be defined as needed
+**Additional types can be defined as needed**
 - `request`: Make HTTP/API calls
-- `prompt`: feeds a prompt to an llm
+- `prompt`: feeds a prompt to the agent
 
 ### Flow Control
 
