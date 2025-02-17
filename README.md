@@ -90,8 +90,6 @@ tasks:
     code: string         # Implementation
 ```
 
-![Enact Flow](diagram.png)
-
 ### Task Types
 
 - `script`: Execute code in specified language
