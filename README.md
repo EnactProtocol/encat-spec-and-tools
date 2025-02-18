@@ -129,6 +129,62 @@ outputs:
     format: string      # Optional format specifier
 ```
 
+### Dependencies
+
+Dependencies define the runtime requirements for executing a capability. They can specify language versions, packages, and other external requirements.
+
+```yaml
+dependencies:            # Optional dependencies section
+  python:               # Runtime identifier
+    version: string     # Runtime version requirement
+    packages:           # Required packages
+      - name: string    # Package name
+        version: string # Version specifier
+```
+
+Example with dependencies:
+
+```yaml
+enact: 1.0.0
+id: DataAnalyzer
+description: Analyzes numerical data and creates visualizations
+version: 1.0.0
+type: atomic
+authors:
+  - name: Jane Doe
+dependencies:
+  python:
+    version: ">=3.9,<4.0"
+    packages:
+      - name: pandas
+        version: ">=2.0.0,<3.0.0"
+      - name: numpy
+        version: ">=1.24.0"
+      - name: matplotlib
+        version: ">=3.7.0"
+inputs:
+  data: 
+    type: array
+    description: Array of numerical values to analyze
+tasks:
+  - id: analyzeData
+    type: script
+    language: python
+    code: |
+      # Implementation using pandas, numpy, and matplotlib
+flow:
+  steps:
+    - task: analyzeData
+outputs:
+  analysis:
+    type: object
+    description: Statistical analysis results
+  visualization:
+    type: string
+    format: base64
+    description: Base64 encoded plot
+```
+
 ## Best Practices
 
 1. **Atomic Capability Design**
