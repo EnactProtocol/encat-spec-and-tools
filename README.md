@@ -5,8 +5,7 @@
 The **Enact Protocol (Enact)** provides a standardized framework for defining and executing automated tasks and workflows. It enables the creation of reusable, composable, and verifiable capabilities that can be discovered and executed in a structured, auditable environment.
 
 ## Overview
-
-Enact is designed for scenarios where you need to define, share, and execute automated workflows in a standardized way. By providing a clear schema for capabilities, parameters, tasks, and flow controls, Enact ensures consistency and interoperability across different implementations.
+As AI agents become more capable, they need reliable access to a diverse set of tools and capabilities. Enact provides a standardized protocol for defining, discovering, and executing tasks that AI agents can use at runtime. Think of it as a universal interface between AI agents and the tools they need to get things done.
 
 **Example Scenario:**
 
