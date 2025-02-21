@@ -36,7 +36,7 @@
         },
         "type": {
             "type": "string",
-            "description": "Type of capability (e.g., 'atomic', 'composite')",
+            "description": "Type of capability",
             "enum": [
                 "atomic",
                 "composite"
@@ -56,6 +56,17 @@
                         "description": "Author's name"
                     }
                 }
+            }
+        },
+        "doc": {
+            "type": "string",
+            "description": "Optional documentation in Markdown format"
+        },
+        "dependencies": {
+            "type": "array",
+            "description": "List of dependencies",
+            "items": {
+                "type": "string"
             }
         },
         "inputs": {
@@ -81,11 +92,11 @@
                     },
                     "type": {
                         "type": "string",
-                        "description": "Type of task (e.g., 'script', 'action')"
+                        "description": "Type of task"
                     },
                     "language": {
                         "type": "string",
-                        "description": "Programming language for script tasks (e.g., 'python', 'javascript')"
+                        "description": "Programming language for script tasks"
                     },
                     "code": {
                         "type": "string",
@@ -143,11 +154,11 @@
             "properties": {
                 "type": {
                     "type": "string",
-                    "description": "Data type of the variable (e.g., 'string', 'number', 'boolean')"
+                    "description": "Data type of the variable"
                 },
                 "format": {
                     "type": "string",
-                    "description": "Optional format for the data type (e.g., 'float', 'int32', 'email')"
+                    "description": "Optional format for the data type"
                 },
                 "description": {
                     "type": "string",
@@ -155,7 +166,7 @@
                 },
                 "default": {
                     "type": "any",
-                    "description": "Optional default value for the variable (used for inputs)"
+                    "description": "Optional default value for the variable"
                 }
             }
         }
