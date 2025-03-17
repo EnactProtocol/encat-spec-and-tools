@@ -9,16 +9,12 @@
         "description",
         "version",
         "type",
-        "authors",
-        "inputs",
-        "tasks",
-        "flow",
-        "outputs"
+        "authors"
     ],
     "properties": {
         "enact": {
             "type": "string",
-            "description": "Enact version",
+            "description": "Enact Protocol version",
             "pattern": "^\\d+\\.\\d+\\.\\d+$"
         },
         "id": {
@@ -62,18 +58,88 @@
             "type": "string",
             "description": "Optional documentation in Markdown format"
         },
-        "dependencies": {
-            "type": "array",
-            "description": "List of dependencies",
-            "items": {
-                "type": "string"
-            }
-        },
         "inputs": {
             "type": "object",
-            "description": "Input variables for the capability",
+            "description": "Input parameters for the capability following OpenAPI schema",
             "additionalProperties": {
-                "$ref": "#/definitions/variableSchema"
+                "type": "object",
+                "required": [
+                    "type",
+                    "description"
+                ],
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "description": "Data type of the parameter",
+                        "enum": [
+                            "string",
+                            "number",
+                            "integer",
+                            "boolean",
+                            "array",
+                            "object"
+                        ]
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Description of the parameter"
+                    },
+                    "format": {
+                        "type": "string",
+                        "description": "Format of the parameter (e.g., date-time, email, etc.)"
+                    },
+                    "required": {
+                        "type": "boolean",
+                        "description": "Whether the parameter is required",
+                        "default": false
+                    },
+                    "default": {
+                        "description": "Default value for the parameter"
+                    },
+                    "items": {
+                        "type": "object",
+                        "description": "Schema for array items"
+                    },
+                    "properties": {
+                        "type": "object",
+                        "description": "Properties for object type parameters"
+                    },
+                    "enum": {
+                        "type": "array",
+                        "description": "Enumeration of possible values"
+                    }
+                }
+            },
+            "default": {}
+        },
+        "dependencies": {
+            "type": "object",
+            "description": "Runtime dependencies for the capability",
+            "properties": {
+                "version": {
+                    "type": "string",
+                    "description": "Runtime version requirement"
+                },
+                "packages": {
+                    "type": "array",
+                    "description": "Required packages",
+                    "items": {
+                        "type": "object",
+                        "required": [
+                            "name"
+                        ],
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Package name"
+                            },
+                            "version": {
+                                "type": "string",
+                                "description": "Version specifier"
+                            }
+                        }
+                    }
+                }
             }
         },
         "tasks": {
@@ -101,15 +167,44 @@
                     "code": {
                         "type": "string",
                         "description": "Code for script tasks"
+                    },
+                    "dependencies": {
+                        "type": "object",
+                        "description": "Dependencies for this specific task",
+                        "properties": {
+                            "version": {
+                                "type": "string",
+                                "description": "Runtime version requirement"
+                            },
+                            "packages": {
+                                "type": "array",
+                                "description": "Required packages",
+                                "items": {
+                                    "type": "object",
+                                    "required": [
+                                        "name"
+                                    ],
+                                    "properties": {
+                                        "name": {
+                                            "type": "string",
+                                            "description": "Package name"
+                                        },
+                                        "version": {
+                                            "type": "string",
+                                            "description": "Version specifier"
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
-            }
+            },
+            "default": []
         },
         "flow": {
             "type": "object",
-            "required": [
-                "steps"
-            ],
+            "description": "Execution flow definition",
             "properties": {
                 "steps": {
                     "type": "array",
@@ -134,39 +229,100 @@
                         }
                     }
                 }
+            },
+            "default": {
+                "steps": []
             }
         },
         "outputs": {
             "type": "object",
-            "description": "Output variables for the capability",
+            "description": "Output parameters for the capability following OpenAPI schema",
             "additionalProperties": {
-                "$ref": "#/definitions/variableSchema"
-            }
-        }
-    },
-    "definitions": {
-        "variableSchema": {
+                "type": "object",
+                "required": [
+                    "type",
+                    "description"
+                ],
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "description": "Data type of the output",
+                        "enum": [
+                            "string",
+                            "number",
+                            "integer",
+                            "boolean",
+                            "array",
+                            "object"
+                        ]
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Description of the output"
+                    },
+                    "format": {
+                        "type": "string",
+                        "description": "Format of the output (e.g., date-time, binary, etc.)"
+                    },
+                    "items": {
+                        "type": "object",
+                        "description": "Schema for array items"
+                    },
+                    "properties": {
+                        "type": "object",
+                        "description": "Properties for object type outputs"
+                    }
+                }
+            },
+            "default": {}
+        },
+        "env": {
             "type": "object",
-            "required": [
-                "type",
-                "description"
-            ],
+            "description": "Environment configuration and resource requirements",
             "properties": {
-                "type": {
-                    "type": "string",
-                    "description": "Data type of the variable"
+                "vars": {
+                    "type": "array",
+                    "description": "Environment variables (treated as secrets by default)",
+                    "items": {
+                        "type": "object",
+                        "required": [
+                            "name",
+                            "description"
+                        ],
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Name of the environment variable"
+                            },
+                            "description": {
+                                "type": "string",
+                                "description": "Description of the environment variable"
+                            },
+                            "required": {
+                                "type": "boolean",
+                                "description": "Whether the environment variable is required",
+                                "default": true
+                            },
+                            "schema": {
+                                "type": "object",
+                                "description": "OpenAPI-style schema with optional default value"
+                            }
+                        }
+                    }
                 },
-                "format": {
-                    "type": "string",
-                    "description": "Optional format for the data type"
-                },
-                "description": {
-                    "type": "string",
-                    "description": "Description of the variable"
-                },
-                "default": {
-                    "type": "any",
-                    "description": "Optional default value for the variable"
+                "resources": {
+                    "type": "object",
+                    "description": "Resource requirements for execution",
+                    "properties": {
+                        "memory": {
+                            "type": "string",
+                            "description": "Required memory allocation"
+                        },
+                        "timeout": {
+                            "type": "string",
+                            "description": "Maximum execution time"
+                        }
+                    }
                 }
             }
         }
