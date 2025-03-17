@@ -18,9 +18,11 @@ type: atomic
 authors:
   - name: Jane Doe
 inputs:
-  ticker: 
-    type: string
+  - name: ticker
     description: The stock ticker symbol (e.g., AAPL)
+    required: true
+    schema:
+      type: string
 tasks:
   - id: fetchPrice
     type: script
@@ -31,18 +33,13 @@ flow:
   steps:
     - task: fetchPrice
 outputs:
-  price: 
-    type: number
-    format: float
+  - name: price
     description: The current stock price
+    schema:
+      type: number
+      format: float
 ```
 
-## Core Features
-
-- **Composability:** Build complex workflows from simple atomic capabilities
-- **Version Control:** Built-in versioning for capabilities and their dependencies
-- **Task Orchestration:** Structured flow control for executing multiple tasks
-- **Input/Output Contracts:** Clear definitions of data requirements and produced results
 
 ## Core Concepts
 
@@ -59,10 +56,17 @@ version: 1.0.0           # Capability version
 type: atomic|composite    # Capability type
 authors:                  # List of authors
   - name: string
-inputs: object           # Input parameters
+inputs:                  # Input parameters (array)
+  - name: string
+    description: string
+    required: boolean
+    schema: object       # OpenAPI-style schema
 tasks: array             # Task definitions
 flow: object            # Execution flow
-outputs: object         # Output parameters
+outputs:                # Output parameters (array)
+  - name: string
+    description: string
+    schema: object      # OpenAPI-style schema
 ```
 
 ### Capability Types
@@ -72,7 +76,7 @@ outputs: object         # Output parameters
 - No dependencies on other capabilities
 - Example: Making an API call, executing a script
 
-**Composite Capabilities**
+**(Coming Soon) Composite Capabilities**
 - Combines multiple atomic capabilities
 - Defines workflow between capabilities
 - Example: Multi-step data processing pipeline
@@ -93,10 +97,6 @@ tasks:
 
 - `script`: Execute code in specified language
 
-**Additional types can be defined as needed**
-- `request`: Make HTTP/API calls
-- `prompt`: feeds a prompt to the agent
-
 ### Flow Control
 
 The flow section defines how tasks are executed:
@@ -112,29 +112,31 @@ flow:
 **Input Parameters:**
 ```yaml
 inputs:
-  paramName:
-    type: string         # Data type
-    description: string  # Parameter description
-    format: string      # Optional format specifier
-    default: any        # Optional default value
+  - name: paramName
+    description: string    # Parameter description
+    required: boolean      # Whether parameter is required
+    schema:                # OpenAPI-style schema
+      type: string         # Data type
+      format: string       # Optional format specifier
+      default: any         # Optional default value
 ```
 
 **Output Parameters:**
 ```yaml
 outputs:
-  paramName:
-    type: string         # Data type
-    description: string  # Parameter description
-    format: string      # Optional format specifier
+  - name: paramName
+    description: string    # Parameter description
+    schema:                # OpenAPI-style schema
+      type: string         # Data type
+      format: string       # Optional format specifier
 ```
 
 ### Dependencies
 
 Dependencies define the runtime requirements for executing a capability. They can specify language versions, packages, and other external requirements.
 
-```yaml
-dependencies:            # Optional dependencies section
-  python:               # Runtime identifier
+```yaml         
+dependencies:
     version: string     # Runtime version requirement
     packages:           # Required packages
       - name: string    # Package name
@@ -151,37 +153,117 @@ version: 1.0.0
 type: atomic
 authors:
   - name: Jane Doe
-dependencies:
-  python:
-    version: ">=3.9,<4.0"
-    packages:
-      - name: pandas
-        version: ">=2.0.0,<3.0.0"
-      - name: numpy
-        version: ">=1.24.0"
-      - name: matplotlib
-        version: ">=3.7.0"
+
 inputs:
-  data: 
-    type: array
+  - name: data
     description: Array of numerical values to analyze
+    required: true
+    schema:
+      type: array
+      items:
+        type: number
+  - name: options
+    description: Configuration options for analysis
+    required: false
+    schema:
+      type: object
+      properties:
+        chart_type:
+          type: string
+          enum: ["bar", "line", "scatter"]
+          default: "line"
+        include_statistics:
+          type: boolean
+          default: true
 tasks:
   - id: analyzeData
     type: script
     language: python
+    dependencies:
+      version: ">=3.9,<4.0"
+      packages:
+        - name: pandas
+          version: ">=2.0.0,<3.0.0"
+        - name: numpy
+          version: ">=1.24.0"
+        - name: matplotlib
+          version: ">=3.7.0"
     code: |
       # Implementation using pandas, numpy, and matplotlib
 flow:
   steps:
     - task: analyzeData
 outputs:
-  analysis:
-    type: object
+  - name: analysis
     description: Statistical analysis results
-  visualization:
-    type: string
-    format: base64
+    schema:
+      type: object
+      properties:
+        mean:
+          type: number
+        median:
+          type: number
+        std:
+          type: number
+        min:
+          type: number
+        max:
+          type: number
+  - name: visualization
     description: Base64 encoded plot
+    schema:
+      type: string
+      format: binary
+```
+
+### Environment Variables
+
+Environment variables define the configuration and secrets required for capability execution. These are resolved at runtime by the Enact execution environment. All environment variables are treated as secrets by default to enhance security.
+
+```yaml
+env:
+  vars:
+    - name: API_KEY_IDENTITY
+      description: "API key for identity verification service"
+      required: true
+    - name: EMAIL_SERVICE_API_KEY
+      description: "API key for email service"
+      required: true
+    - name: SLACK_WEBHOOK_URL
+      description: "Webhook URL for Slack notifications"
+      required: true
+      schema:
+        type: string
+        default: "https://hooks.slack.com/services/default-path" # Optional default
+  resources:
+    memory: "1GB"
+    timeout: "300s"
+```
+
+**Environment Variable Properties:**
+- `name`: Identifier for the environment variable
+- `description`: Human-readable description of the variable's purpose
+- `required`: Whether the variable must be provided (`true`/`false`)
+- `schema`: OpenAPI-style schema with optional default value
+
+**Environment Variables Resolution:**
+The Enact runtime resolves environment variables from multiple possible sources in the following order:
+1. Execution context provided variables
+2. User-configured environment variable service
+3. Local environment variables
+4. Default values specified in the capability definition
+
+All environment variables are treated as secrets by default and should be stored securely and never logged or exposed in execution traces.
+
+### Resource Requirements
+
+Resource requirements define the computational resources needed for capability execution:
+
+```yaml
+env:
+  resources:
+    memory: "1GB"     # Required memory allocation
+    timeout: "300s"   # Maximum execution time
 ```
 
 ## Best Practices
@@ -195,6 +277,13 @@ outputs:
    - Define clear dependencies
    - Handle task failures gracefully
    - Document the workflow clearly
+
+3. **Environment Variable Management**
+   - Clearly document all required environment variables
+   - Remember that all environment variables are treated as secrets by default
+   - Provide defaults only when absolutely necessary and safe to do so
+   - Consider offering multiple resolution strategies for variables (e.g., from registry, local env, etc.)
+   - Validate all required variables before starting execution
 
 ## License
 
