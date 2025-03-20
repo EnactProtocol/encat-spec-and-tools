@@ -223,13 +223,13 @@ Environment variables define the configuration and secrets required for capabili
 ```yaml
 env:
   vars:
-    - name: API_KEY_IDENTITY
+    - name: ENACT_AUTH_IDENTITY_KEY
       description: "API key for identity verification service"
       required: true
-    - name: EMAIL_SERVICE_API_KEY
+    - name: ENACT_EMAIL_SERVICE_KEY
       description: "API key for email service"
       required: true
-    - name: SLACK_WEBHOOK_URL
+    - name: ENACT_SLACK_WEBHOOK_URL
       description: "Webhook URL for Slack notifications"
       required: true
       schema:
