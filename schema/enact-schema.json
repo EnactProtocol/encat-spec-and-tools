@@ -50,6 +50,16 @@
                     "name": {
                         "type": "string",
                         "description": "Author's name"
+                    },
+                    "email": {
+                        "type": "string",
+                        "description": "Author's email address",
+                        "format": "email"
+                    },
+                    "url": {
+                        "type": "string",
+                        "description": "Author's URL",
+                        "format": "uri"
                     }
                 }
             }
@@ -355,6 +365,11 @@
                     }
                 }
             }
+        }
+    },
+    "patternProperties": {
+        "^x-": {
+            "description": "Extensions to the Enact Protocol. The field name MUST begin with 'x-'."
         }
     }
 }

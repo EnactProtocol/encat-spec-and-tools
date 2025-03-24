@@ -17,12 +17,13 @@ version: 1.0.0
 type: atomic
 authors:
   - name: Jane Doe
+    email: jane@example.com
+    url: https://example.com/jane
 inputs:
-  - name: ticker
+  ticker:
+    type: string
     description: The stock ticker symbol (e.g., AAPL)
     required: true
-    schema:
-      type: string
 tasks:
   - id: fetchPrice
     type: script
@@ -30,11 +31,10 @@ tasks:
     code: |
       # Task implementation
 outputs:
-  - name: price
+  price:
+    type: number
+    format: float
     description: The current stock price
-    schema:
-      type: number
-      format: float
 ```
 
 
@@ -49,22 +49,23 @@ A **capability** is a unit of functionality defined in YAML that follows the Ena
 enact: 1.0.0              # Protocol version
 id: string                # Unique identifier
 description: string       # What the capability does
-version: 1.0.0           # Capability version
+version: 1.0.0            # Capability version
 type: atomic|composite    # Capability type
 authors:                  # List of authors
   - name: string
-inputs:                  # Input parameters (array)
-  - name: string
-    description: string
-    required: boolean
-    schema: object       # OpenAPI-style schema
-tasks: array             # Task definitions (for atomic capabilities)
-imports: array           # Imported capabilities (for composite capabilities)
-flow: object             # Flow control (for composite capabilities)
-outputs:                # Output parameters (array)
-  - name: string
-    description: string
-    schema: object      # OpenAPI-style schema
+inputs:                   # Input parameters (object)
+  paramName:
+    type: string          # Data type
+    description: string   # Parameter description
+    required: boolean     # Whether parameter is required
+tasks: array              # Task definitions (for atomic capabilities)
+imports: array            # Imported capabilities (for composite capabilities)
+flow: object              # Flow control (for composite capabilities)
+outputs:                  # Output parameters (object)
+  paramName:
+    type: string          # Data type
+    description: string   # Parameter description
+    format: string        # Optional format specifier
 ```
 
 ### Atomic Capabilities
@@ -86,11 +87,10 @@ type: atomic
 authors:
   - name: John Smith
 inputs:
-  - name: celsius
+  celsius:
+    type: number
     description: Temperature in Celsius
     required: true
-    schema:
-      type: number
 tasks:
   - id: convertTemperature
     type: script
@@ -99,10 +99,9 @@ tasks:
       fahrenheit = celsius * 9/5 + 32
       return {"fahrenheit": fahrenheit}
 outputs:
-  - name: fahrenheit
+  fahrenheit:
+    type: number
     description: Temperature in Fahrenheit
-    schema:
-      type: number
 ```
 
 ### Tasks
@@ -117,7 +116,7 @@ tasks:
     code: string         # Implementation
 ```
 
-### Task Types
+### Task Types (More Soon)
 
 - `script`: Execute code in specified language
 
@@ -126,24 +125,21 @@ tasks:
 **Input Parameters:**
 ```yaml
 inputs:
-  - name: paramName
-    description: string    # Parameter description
-    required: boolean      # Whether parameter is required
-    schema:                # OpenAPI-style schema
-      type: string         # Data type
-      format: string       # Optional format specifier
-      default: any         # Optional default value
+  paramName:
+    type: string         # Data type
+    description: string  # Parameter description
+    required: boolean    # Whether parameter is required
+    format: string       # Optional format specifier
+    default: any         # Optional default value
 ```
 
 **Output Parameters:**
 ```yaml
 outputs:
-  - name: paramName
-    description: string    # Parameter description
-    schema:                # OpenAPI-style schema
-      type: string         # Data type (string, number, boolean, object, array)
-      format: string       # Optional format specifier (e.g., float, date-time)
-
+  paramName:
+    type: string         # Data type (string, number, boolean, object, array)
+    description: string  # Parameter description
+    format: string       # Optional format specifier (e.g., float, date-time)
 ```
 
 ### Dependencies
@@ -168,28 +164,27 @@ version: 1.0.0
 type: atomic
 authors:
   - name: Jane Doe
+    email: jane@example.com
 
 inputs:
-  - name: data
+  data:
+    type: array
     description: Array of numerical values to analyze
     required: true
-    schema:
-      type: array
-      items:
-        type: number
-  - name: options
+    items:
+      type: number
+  options:
+    type: object
     description: Configuration options for analysis
     required: false
-    schema:
-      type: object
-      properties:
-        chart_type:
-          type: string
-          enum: ["bar", "line", "scatter"]
-          default: "line"
-        include_statistics:
-          type: boolean
-          default: true
+    properties:
+      chart_type:
+        type: string
+        enum: ["bar", "line", "scatter"]
+        default: "line"
+      include_statistics:
+        type: boolean
+        default: true
 tasks:
   - id: analyzeData
     type: script
@@ -206,26 +201,24 @@ tasks:
     code: |
       # Implementation using pandas, numpy, and matplotlib
 outputs:
-  - name: analysis
+  analysis:
+    type: object
     description: Statistical analysis results
-    schema:
-      type: object
-      properties:
-        mean:
-          type: number
-        median:
-          type: number
-        std:
-          type: number
-        min:
-          type: number
-        max:
-          type: number
-  - name: visualization
+    properties:
+      mean:
+        type: number
+      median:
+        type: number
+      std:
+        type: number
+      min:
+        type: number
+      max:
+        type: number
+  visualization:
+    type: string
+    format: binary
     description: Base64 encoded plot
-    schema:
-      type: string
-      format: binary
 ```
 
 ### Environment Variables
@@ -278,6 +271,51 @@ env:
     timeout: "300s"   # Maximum execution time
 ```
 
+### Error Handling
+
+It is recommended to handle errors using the standard `outputs` structure. A common pattern is to include an `error` output that is present only when an error occurs:
+
+```yaml
+outputs:
+  result:
+    type: object
+    description: The successful result of the operation (populated on success)
+  error:
+    type: object
+    description: Error information (populated only when an error occurs)
+    properties:
+      message:
+        type: string
+        description: Human-readable error message
+      code:
+        type: string
+        description: Machine-readable error code
+      details:
+        type: object
+        description: Additional error details
+```
+
+Example implementation in a Python task:
+
+```python
+try:
+    # Task implementation
+    result = process_data(data)
+    return {
+        "result": result,
+        # No error field when successful
+    }
+except Exception as e:
+    return {
+        # No result field when error occurs
+        "error": {
+            "message": "Failed to process data",
+            "code": "DATA_PROCESSING_ERROR",
+            "details": {"exception": str(e)}
+        }
+    }
+```
+
 ## Future Features: Composite Capabilities
 
 Composite capabilities allow for more complex workflows by combining multiple atomic capabilities into a coordinated sequence.
@@ -293,11 +331,10 @@ type: composite
 authors:
   - name: Jane Doe
 inputs:
-  - name: someInput
+  someInput:
+    type: string
     description: Input for the composite workflow
     required: true
-    schema:
-      type: string
 imports:
   - id: AtomicCapability1
     version: "1.0.0"
@@ -312,10 +349,9 @@ flow:
       inputs:
         paramB: "{{outputs.AtomicCapability1.result}}"
 outputs:
-  - name: finalResult
+  finalResult:
+    type: object
     description: The final result of the workflow
-    schema:
-      type: object
 ```
 
 ## Best Practices
@@ -338,6 +374,11 @@ outputs:
    - Provide defaults only when absolutely necessary and safe to do so
    - Consider offering multiple resolution strategies for variables (e.g., from registry, local env, etc.)
    - Validate all required variables before starting execution
+
+5. **Documentation**
+   - Provide clear descriptions for capabilities, inputs, and outputs
+   - Include examples where appropriate
+   - Document any special requirements or considerations
 
 ## License
 
