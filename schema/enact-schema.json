@@ -60,7 +60,7 @@
         },
         "inputs": {
             "type": "object",
-            "description": "Input parameters for the capability following OpenAPI schema",
+            "description": "Input parameters for the capability",
             "additionalProperties": {
                 "type": "object",
                 "required": [
@@ -144,7 +144,7 @@
         },
         "tasks": {
             "type": "array",
-            "description": "List of tasks",
+            "description": "List of tasks (for atomic capabilities)",
             "items": {
                 "type": "object",
                 "required": [
@@ -158,7 +158,11 @@
                     },
                     "type": {
                         "type": "string",
-                        "description": "Type of task"
+                        "description": "Type of task",
+                        "enum": [
+                            "script",
+                            "request"
+                        ]
                     },
                     "language": {
                         "type": "string",
@@ -202,9 +206,31 @@
             },
             "default": []
         },
+        "imports": {
+            "type": "array",
+            "description": "Imported capabilities (for composite capabilities)",
+            "items": {
+                "type": "object",
+                "required": [
+                    "id",
+                    "version"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "Identifier of the imported capability"
+                    },
+                    "version": {
+                        "type": "string",
+                        "description": "Version of the imported capability"
+                    }
+                }
+            },
+            "default": []
+        },
         "flow": {
             "type": "object",
-            "description": "Execution flow definition",
+            "description": "Execution flow definition (for composite capabilities)",
             "properties": {
                 "steps": {
                     "type": "array",
@@ -212,16 +238,20 @@
                     "items": {
                         "type": "object",
                         "required": [
-                            "task"
+                            "capability"
                         ],
                         "properties": {
-                            "task": {
+                            "capability": {
                                 "type": "string",
-                                "description": "ID of the task to execute"
+                                "description": "ID of the capability to execute"
+                            },
+                            "inputs": {
+                                "type": "object",
+                                "description": "Input mappings for the capability"
                             },
                             "dependencies": {
                                 "type": "array",
-                                "description": "List of task IDs that this step depends on",
+                                "description": "List of capabilities that this step depends on",
                                 "items": {
                                     "type": "string"
                                 }
@@ -236,7 +266,7 @@
         },
         "outputs": {
             "type": "object",
-            "description": "Output parameters for the capability following OpenAPI schema",
+            "description": "Output parameters for the capability",
             "additionalProperties": {
                 "type": "object",
                 "required": [

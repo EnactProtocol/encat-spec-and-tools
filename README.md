@@ -29,9 +29,6 @@ tasks:
     language: python
     code: |
       # Task implementation
-flow:
-  steps:
-    - task: fetchPrice
 outputs:
   - name: price
     description: The current stock price
@@ -61,25 +58,52 @@ inputs:                  # Input parameters (array)
     description: string
     required: boolean
     schema: object       # OpenAPI-style schema
-tasks: array             # Task definitions
-flow: object            # Execution flow
+tasks: array             # Task definitions (for atomic capabilities)
+imports: array           # Imported capabilities (for composite capabilities)
+flow: object             # Flow control (for composite capabilities)
 outputs:                # Output parameters (array)
   - name: string
     description: string
     schema: object      # OpenAPI-style schema
 ```
 
-### Capability Types
+### Atomic Capabilities
 
-**Atomic Capabilities**
-- Single, self-contained operation
+Atomic capabilities are the basic building blocks of the Enact Protocol:
+
+- Single, self-contained operations
 - No dependencies on other capabilities
 - Example: Making an API call, executing a script
 
-**(Coming Soon) Composite Capabilities**
-- Combines multiple atomic capabilities
-- Defines workflow between capabilities
-- Example: Multi-step data processing pipeline
+In atomic capabilities, tasks are executed sequentially in the order they are defined in the `tasks` array.
+
+```yaml
+enact: 1.0.0
+id: SimpleConverter
+description: Converts temperature from Celsius to Fahrenheit
+version: 1.0.0
+type: atomic
+authors:
+  - name: John Smith
+inputs:
+  - name: celsius
+    description: Temperature in Celsius
+    required: true
+    schema:
+      type: number
+tasks:
+  - id: convertTemperature
+    type: script
+    language: python
+    code: |
+      fahrenheit = celsius * 9/5 + 32
+      return {"fahrenheit": fahrenheit}
+outputs:
+  - name: fahrenheit
+    description: Temperature in Fahrenheit
+    schema:
+      type: number
+```
 
 ### Tasks
 
@@ -96,16 +120,6 @@ tasks:
 ### Task Types
 
 - `script`: Execute code in specified language
-
-### Flow Control
-
-The flow section defines how tasks are executed:
-
-```yaml
-flow:
-  steps:
-    - task: taskId        # Reference to task
-```
 
 ### Parameter Management
 
@@ -127,8 +141,9 @@ outputs:
   - name: paramName
     description: string    # Parameter description
     schema:                # OpenAPI-style schema
-      type: string         # Data type
-      format: string       # Optional format specifier
+      type: string         # Data type (string, number, boolean, object, array)
+      format: string       # Optional format specifier (e.g., float, date-time)
+
 ```
 
 ### Dependencies
@@ -190,9 +205,6 @@ tasks:
           version: ">=3.7.0"
     code: |
       # Implementation using pandas, numpy, and matplotlib
-flow:
-  steps:
-    - task: analyzeData
 outputs:
   - name: analysis
     description: Statistical analysis results
@@ -266,17 +278,59 @@ env:
     timeout: "300s"   # Maximum execution time
 ```
 
+## Future Features: Composite Capabilities
+
+Composite capabilities allow for more complex workflows by combining multiple atomic capabilities into a coordinated sequence.
+
+### Composite Capability Structure
+
+```yaml
+enact: 1.0.0
+id: CompositeExample
+description: A workflow combining multiple capabilities
+version: 1.0.0
+type: composite
+authors:
+  - name: Jane Doe
+inputs:
+  - name: someInput
+    description: Input for the composite workflow
+    required: true
+    schema:
+      type: string
+imports:
+  - id: AtomicCapability1
+    version: "1.0.0"
+  - id: AtomicCapability2
+    version: "2.1.0"
+flow:
+  steps:
+    - capability: AtomicCapability1
+      inputs:
+        paramA: "{{inputs.someInput}}"
+    - capability: AtomicCapability2
+      inputs:
+        paramB: "{{outputs.AtomicCapability1.result}}"
+outputs:
+  - name: finalResult
+    description: The final result of the workflow
+    schema:
+      type: object
+```
+
 ## Best Practices
 
 1. **Atomic Capability Design**
    - Keep capabilities focused on single responsibility
    - Make inputs and outputs explicit
    - Include proper error handling
+   - Remember that tasks execute in the order they are defined
 
 2. **Composite Capability Design**
-   - Define clear dependencies
-   - Handle task failures gracefully
+   - Define clear imports with specific versions
+   - Handle capability failures gracefully
    - Document the workflow clearly
+   - Use flow for complex orchestration
 
 3. **Environment Variable Management**
    - Clearly document all required environment variables
