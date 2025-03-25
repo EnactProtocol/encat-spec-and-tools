@@ -319,26 +319,6 @@ except Exception as e:
 
 Capabilities can be validated against the [Enact JSON Schema](./schema/enact-schema.json) to ensure they conform to the protocol specification.
 
-## Best Practices
-
-1. **Atomic Capability Design**
-   - Keep capabilities focused on single responsibility
-   - Make inputs and outputs explicit
-   - Include proper error handling
-   - Remember that tasks execute in the order they are defined
-
-2. **Environment Variable Management**
-   - Clearly document all required environment variables
-   - Remember that all environment variables are treated as secrets by default
-   - Provide defaults only when absolutely necessary and safe to do so
-   - Consider offering multiple resolution strategies for variables (e.g., from registry, local env, etc.)
-   - Validate all required variables before starting execution
-
-3. **Documentation**
-   - Provide clear descriptions for capabilities, inputs, and outputs
-   - Include examples where appropriate
-   - Document any special requirements or considerations
-
 ## Composite Capabilities
 
 For information on building composite capabilities, please see the [Composite Capabilities documentation](./composite-capabilities.md).
