@@ -37,7 +37,6 @@ outputs:
     description: The current stock price
 ```
 
-
 ## Core Concepts
 
 ### Capabilities
@@ -59,8 +58,6 @@ inputs:                   # Input parameters (object)
     description: string   # Parameter description
     required: boolean     # Whether parameter is required
 tasks: array              # Task definitions (for atomic capabilities)
-imports: array            # Imported capabilities (for composite capabilities)
-flow: object              # Flow control (for composite capabilities)
 outputs:                  # Output parameters (object)
   paramName:
     type: string          # Data type
@@ -141,6 +138,8 @@ outputs:
     description: string  # Parameter description
     format: string       # Optional format specifier (e.g., float, date-time)
 ```
+
+Enact's parameter definitions are based on OpenAPI 3.1 Schema Object specification, but with description and required properties at the same level as type, rather than nested within schema.
 
 ### Dependencies
 
@@ -316,43 +315,9 @@ except Exception as e:
     }
 ```
 
-## Future Features: Composite Capabilities
+## Schema Validation
 
-Composite capabilities allow for more complex workflows by combining multiple atomic capabilities into a coordinated sequence.
-
-### Composite Capability Structure
-
-```yaml
-enact: 1.0.0
-id: CompositeExample
-description: A workflow combining multiple capabilities
-version: 1.0.0
-type: composite
-authors:
-  - name: Jane Doe
-inputs:
-  someInput:
-    type: string
-    description: Input for the composite workflow
-    required: true
-imports:
-  - id: AtomicCapability1
-    version: "1.0.0"
-  - id: AtomicCapability2
-    version: "2.1.0"
-flow:
-  steps:
-    - capability: AtomicCapability1
-      inputs:
-        paramA: "{{inputs.someInput}}"
-    - capability: AtomicCapability2
-      inputs:
-        paramB: "{{outputs.AtomicCapability1.result}}"
-outputs:
-  finalResult:
-    type: object
-    description: The final result of the workflow
-```
+Capabilities can be validated against the [Enact JSON Schema](./schema/enact-schema.json) to ensure they conform to the protocol specification.
 
 ## Best Practices
 
@@ -362,23 +327,21 @@ outputs:
    - Include proper error handling
    - Remember that tasks execute in the order they are defined
 
-2. **Composite Capability Design**
-   - Define clear imports with specific versions
-   - Handle capability failures gracefully
-   - Document the workflow clearly
-   - Use flow for complex orchestration
-
-3. **Environment Variable Management**
+2. **Environment Variable Management**
    - Clearly document all required environment variables
    - Remember that all environment variables are treated as secrets by default
    - Provide defaults only when absolutely necessary and safe to do so
    - Consider offering multiple resolution strategies for variables (e.g., from registry, local env, etc.)
    - Validate all required variables before starting execution
 
-5. **Documentation**
+3. **Documentation**
    - Provide clear descriptions for capabilities, inputs, and outputs
    - Include examples where appropriate
    - Document any special requirements or considerations
+
+## Composite Capabilities
+
+For information on building composite capabilities, please see the [Composite Capabilities documentation](./composite-capabilities.md).
 
 ## License
 
