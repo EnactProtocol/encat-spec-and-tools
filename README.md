@@ -2,46 +2,89 @@
 
 ![Status: Alpha](https://img.shields.io/badge/Status-Alpha-yellow) ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg) [![Discord](https://img.shields.io/badge/Discord-Enact_PROTOCOL-blue?logo=discord&logoColor=white)](https://discord.gg/mMfxvMtHyS)
 
-The **Enact Protocol (Enact)** provides a standardized framework for defining and executing tasks. It enables the creation of reusable, composable, and verifiable capabilities that can be discovered and executed.
+The **Enact Protocol (Enact)** provides a standardized framework for defining and executing tasks. It enables the creation of reusable, composable, and verifiable capabilities that can be discovered and executed by AI agents and other automated systems.
 
 ## Overview
-As AI agents become more capable, they need reliable access to a diverse set of tools and capabilities. Enact provides a standardized protocol for defining, discovering, and executing tasks that AI agents can use at runtime. Think of it as a universal interface between AI agents and the tools they need to get things done.
 
-**Example Scenario:**
+At its simplest, an Enact capability is a task with a structured description in YAML:
 
 ```yaml
 enact: 1.0.0
-id: GetStockPrice
-description: Retrieves the current stock price for a given ticker symbol.
+id: HelloWorld
+description: A simple Hello World example
+tasks:
+    - id: sayHello
+      type: script
+      language: python
+      code: |
+        print("Hello World")
+```
+
+
+Enact addresses a critical need in the AI ecosystem: as AI agents become more capable, they require reliable access to a diverse set of reliable tools and capabilities. Enact provides a standardized protocol for defining, discovering, and executing tasks that AI agents can use at runtime. Think of it as a universal interface between AI agents and the tools they need to get things done.
+
+### Architecture
+
+The Enact Protocol consists of several key components that work together:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Enact Ecosystem                         │
+│                                                             │
+│  ┌───────────────┐      ┌────────────────┐                  │
+│  │ AI Agents &   │      │  Capability    │                  │
+│  │ Applications  │◄────►│  Registry      │                  │
+│  └───────────────┘      └────────────────┘                  │
+│          ▲                      ▲                           │
+│          │                      │                           │
+│          ▼                      │                           │
+│  ┌───────────────┐              │                           │
+│  │   Execution   │              │                           │
+│  │  Environment  │◄─────────────┘                           │
+│  └───────────────┘                                          │
+│          ▲                                                  │
+│          │                                                  │
+│          ▼                                                  │
+│  ┌───────────────┐      ┌────────────────┐                  │
+│  │ Atomic        │      │  Composite     │                  │
+│  │ Capabilities  │◄────►│  Capabilities  │                  │
+│  └───────────────┘      └────────────────┘                  │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+```yaml
+enact: 1.0.0
+id: TemperatureConverter
+description: Converts temperature from Celsius to Fahrenheit
 version: 1.0.0
 type: atomic
 authors:
-  - name: Jane Doe
-    email: jane@example.com
-    url: https://example.com/jane
+  - name: Your Name
+    email: your.email@example.com
 inputs:
-  ticker:
-    type: string
-    description: The stock ticker symbol (e.g., AAPL)
+  celsius:
+    type: number
+    description: Temperature in Celsius
     required: true
 tasks:
-  - id: fetchPrice
+  - id: convertTemperature
     type: script
     language: python
     code: |
-      # Task implementation
+      fahrenheit = celsius * 9/5 + 32
+      return {"fahrenheit": fahrenheit}
 outputs:
-  price:
+  fahrenheit:
     type: number
-    format: float
-    description: The current stock price
+    description: Temperature in Fahrenheit
 ```
 
 ## Core Concepts
 
 ### Capabilities
 
-A **capability** is a unit of functionality defined in YAML that follows the Enact Protocol Schema. It can be either atomic (single operation) or composite (workflow combining multiple capabilities).
+A **capability** is a unit of functionality defined in YAML that follows the Enact Protocol Schema.
 
 **Required Fields:**
 ```yaml
@@ -101,6 +144,8 @@ outputs:
     description: Temperature in Fahrenheit
 ```
 
+With enact you can also create more complicated workflows. For more details on composite capabilities, please see the [Composite Capabilities documentation](./composite-capabilities.md).
+
 ### Tasks
 
 Tasks represent the executable units within a capability. Each task must have:
@@ -108,14 +153,12 @@ Tasks represent the executable units within a capability. Each task must have:
 ```yaml
 tasks:
   - id: uniqueId           # Task identifier
-    type: string          # Task type (script, request, etc.)
+    type: string          # Task type
     language: string      # For script tasks
     code: string         # Implementation
 ```
 
-### Task Types (More Soon)
 
-- `script`: Execute code in specified language
 
 ### Parameter Management
 
@@ -315,14 +358,26 @@ except Exception as e:
     }
 ```
 
+### Task Types
+
+Enact supports the following task types:
+
+| Type | Description | Status |
+|------|-------------|--------|
+| `script` | Execute code in a specified language | Available |
+| `agent` | Agent operations | Coming soon |
+| `prompt` | Return a prompt | Coming soon |
+| `shell` | Execute shell commands | Coming soon |
+
+
 ## Schema Validation
 
 Capabilities can be validated against the [Enact JSON Schema](./schema/enact-schema.json) to ensure they conform to the protocol specification.
 
-## Composite Capabilities
-
-For information on building composite capabilities, please see the [Composite Capabilities documentation](./composite-capabilities.md).
-
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
+
+---
+
+© 2025 Enact Protocol Contributors
