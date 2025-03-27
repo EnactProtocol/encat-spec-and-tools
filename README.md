@@ -293,13 +293,6 @@ env:
 - `required`: Whether the variable must be provided (`true`/`false`)
 - `schema`: OpenAPI-style schema with optional default value
 
-**Environment Variables Resolution:**
-The Enact runtime resolves environment variables from multiple possible sources in the following order:
-1. Execution context provided variables
-2. User-configured environment variable service
-3. Local environment variables
-4. Default values specified in the capability definition
-
 All environment variables are treated as secrets by default and should be stored securely and never logged or exposed in execution traces.
 
 ### Resource Requirements
