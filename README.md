@@ -194,7 +194,7 @@ outputs:
   required: ["param1"]    # Array of required parameter names
 ```
 
-Enact's parameter definitions are fully compliant with JSON Schema, allowing for rich validation and documentation.
+Enact's parameter definitions are fully compliant with [JSON Schema](https://json-schema.org/overview/what-is-jsonschema), allowing for rich validation and documentation.
 
 ### Dependencies
 
