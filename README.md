@@ -1,4 +1,4 @@
-# Enact Protocol (Enact)
+# Enact Protocol (Enact) - JSON Schema Edition
 
 ![Status: Alpha](https://img.shields.io/badge/Status-Alpha-yellow) ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg) [![Discord](https://img.shields.io/badge/Discord-Enact_PROTOCOL-blue?logo=discord&logoColor=white)](https://discord.gg/mMfxvMtHyS)
 
@@ -13,13 +13,12 @@ enact: 1.0.0
 id: HelloWorld
 description: A simple Hello World example
 tasks:
-    - id: sayHello
-      type: script
-      language: python
-      code: |
-        print("Hello World")
+  - id: sayHello
+    type: script
+    language: python
+    code: |
+      print("Hello World")
 ```
-
 
 Enact addresses a critical need in the AI ecosystem: as AI agents become more capable, they require reliable access to a diverse set of reliable tools and capabilities. Enact provides a standardized protocol for defining, discovering, and executing tasks that AI agents can use at runtime. Think of it as a universal interface between AI agents and the tools they need to get things done.
 
@@ -63,10 +62,12 @@ authors:
   - name: Your Name
     email: your.email@example.com
 inputs:
-  celsius:
-    type: number
-    description: Temperature in Celsius
-    required: true
+  type: object
+  properties:
+    celsius:
+      type: number
+      description: Temperature in Celsius
+  required: ["celsius"]
 tasks:
   - id: convertTemperature
     type: script
@@ -75,9 +76,12 @@ tasks:
       fahrenheit = celsius * 9/5 + 32
       return {"fahrenheit": fahrenheit}
 outputs:
-  fahrenheit:
-    type: number
-    description: Temperature in Fahrenheit
+    type: object
+    properties:
+      fahrenheit:
+        type: number
+        description: Temperature in Fahrenheit
+    required: ["fahrenheit"]
 ```
 
 ## Core Concepts
@@ -95,17 +99,15 @@ version: 1.0.0            # Capability version
 type: atomic|composite    # Capability type
 authors:                  # List of authors
   - name: string
-inputs:                   # Input parameters (object)
-  paramName:
-    type: string          # Data type
-    description: string   # Parameter description
-    required: boolean     # Whether parameter is required
+inputs:                   # Input parameters (JSON Schema)
+  type: object
+  properties: {}          # JSON Schema properties
+  required: []            # Required property names
 tasks: array              # Task definitions (for atomic capabilities)
-outputs:                  # Output parameters (object)
-  paramName:
-    type: string          # Data type
-    description: string   # Parameter description
-    format: string        # Optional format specifier
+outputs:                  # Output parameters (JSON Schema)
+  type: object
+  properties: {}          # JSON Schema properties
+  required: []            # Required property names
 ```
 
 ### Atomic Capabilities
@@ -127,10 +129,13 @@ type: atomic
 authors:
   - name: John Smith
 inputs:
-  celsius:
-    type: number
-    description: Temperature in Celsius
-    required: true
+    type: object
+    properties:
+      celsius:
+        type: number
+        description: Temperature in Celsius
+        minimum: -273.15
+    required: ["celsius"]
 tasks:
   - id: convertTemperature
     type: script
@@ -139,9 +144,12 @@ tasks:
       fahrenheit = celsius * 9/5 + 32
       return {"fahrenheit": fahrenheit}
 outputs:
-  fahrenheit:
-    type: number
-    description: Temperature in Fahrenheit
+  type: object
+  properties:
+    fahrenheit:
+      type: number
+      description: Temperature in Fahrenheit
+  required: ["fahrenheit"]
 ```
 
 With enact you can also create more complicated workflows. For more details on composite capabilities, please see the [Composite Capabilities documentation](./composite-capabilities.md).
@@ -152,37 +160,41 @@ Tasks represent the executable units within a capability. Each task must have:
 
 ```yaml
 tasks:
-  - id: uniqueId           # Task identifier
+  - id: uniqueId          # Task identifier
     type: string          # Task type
     language: string      # For script tasks
-    code: string         # Implementation
+    code: string          # Implementation
 ```
 
+### Parameter Management with JSON Schema
 
-
-### Parameter Management
-
-**Input Parameters:**
+**Input Parameters with JSON Schema:**
 ```yaml
 inputs:
-  paramName:
-    type: string         # Data type
-    description: string  # Parameter description
-    required: boolean    # Whether parameter is required
-    format: string       # Optional format specifier
-    default: any         # Optional default value
+  type: object
+  properties:
+    paramName:
+      type: string        # Data type (string, number, boolean, object, array)
+      description: string # Parameter description
+      format: string      # Optional format specifier
+      default: any        # Optional default value
+      # Any other JSON Schema validation keywords
+  required: ["param1", "param2"]  # Array of required parameter names
 ```
 
-**Output Parameters:**
+**Output Parameters with JSON Schema:**
 ```yaml
 outputs:
-  paramName:
-    type: string         # Data type (string, number, boolean, object, array)
-    description: string  # Parameter description
-    format: string       # Optional format specifier (e.g., float, date-time)
+  type: object
+  properties:
+    paramName:
+      type: string        # Data type (string, number, boolean, object, array)
+      description: string # Parameter description
+      format: string      # Optional format specifier
+  required: ["param1"]    # Array of required parameter names
 ```
 
-Enact's parameter definitions are based on OpenAPI 3.1 Schema Object specification, but with description and required properties at the same level as type, rather than nested within schema.
+Enact's parameter definitions are fully compliant with JSON Schema, allowing for rich validation and documentation.
 
 ### Dependencies
 
@@ -209,24 +221,26 @@ authors:
     email: jane@example.com
 
 inputs:
-  data:
-    type: array
-    description: Array of numerical values to analyze
-    required: true
-    items:
-      type: number
-  options:
-    type: object
-    description: Configuration options for analysis
-    required: false
-    properties:
-      chart_type:
-        type: string
-        enum: ["bar", "line", "scatter"]
-        default: "line"
-      include_statistics:
-        type: boolean
-        default: true
+  type: object
+  properties:
+    data:
+      type: array
+      description: Array of numerical values to analyze
+      items:
+        type: number
+    options:
+      type: object
+      description: Configuration options for analysis
+      properties:
+        chart_type:
+          type: string
+          enum: ["bar", "line", "scatter"]
+          default: "line"
+        include_statistics:
+          type: boolean
+          default: true
+  required: ["data"]
+
 tasks:
   - id: analyzeData
     type: script
@@ -242,56 +256,63 @@ tasks:
           version: ">=3.7.0"
     code: |
       # Implementation using pandas, numpy, and matplotlib
+
 outputs:
-  analysis:
-    type: object
-    description: Statistical analysis results
-    properties:
-      mean:
-        type: number
-      median:
-        type: number
-      std:
-        type: number
-      min:
-        type: number
-      max:
-        type: number
-  visualization:
-    type: string
-    format: binary
-    description: Base64 encoded plot
+  type: object
+  properties:
+    analysis:
+      type: object
+      description: Statistical analysis results
+      properties:
+        mean:
+          type: number
+        median:
+          type: number
+        std:
+          type: number
+        min:
+          type: number
+        max:
+          type: number
+    visualization:
+      type: string
+      format: binary
+      description: Base64 encoded plot
+  required: ["analysis"]
 ```
 
 ### Environment Variables
 
 Environment variables define the configuration and secrets required for capability execution. These are resolved at runtime by the Enact execution environment. All environment variables are treated as secrets by default to enhance security.
-
 ```yaml
 env:
-  vars:
-    - name: ENACT_AUTH_IDENTITY_KEY
-      description: "API key for identity verification service"
-      required: true
-    - name: ENACT_EMAIL_SERVICE_KEY
-      description: "API key for email service"
-      required: true
-    - name: ENACT_SLACK_WEBHOOK_URL
-      description: "Webhook URL for Slack notifications"
-      required: true
-      schema:
-        type: string
-        default: "https://hooks.slack.com/services/default-path" # Optional default
+  type: object
+  properties:
+    vars:
+      type: object
+      properties:
+        ENACT_AUTH_IDENTITY_KEY:
+          type: string
+          description: "API key for identity verification service"
+        ENACT_EMAIL_SERVICE_KEY:
+          type: string
+          description: "API key for email service"
+        ENACT_SLACK_WEBHOOK_URL:
+          type: string
+          description: "Webhook URL for Slack notifications"
+          default: "https://hooks.slack.com/services/default-path"
+      required: ["ENACT_AUTH_IDENTITY_KEY", "ENACT_EMAIL_SERVICE_KEY"]
   resources:
     memory: "1GB"
     timeout: "300s"
+  required: ["vars"]
 ```
 
 **Environment Variable Properties:**
 - `name`: Identifier for the environment variable
 - `description`: Human-readable description of the variable's purpose
 - `required`: Whether the variable must be provided (`true`/`false`)
-- `schema`: OpenAPI-style schema with optional default value
+- `schema`: Full JSON Schema for the environment variable
 
 All environment variables are treated as secrets by default and should be stored securely and never logged or exposed in execution traces.
 
@@ -308,26 +329,31 @@ env:
 
 ### Error Handling
 
-It is recommended to handle errors using the standard `outputs` structure. A common pattern is to include an `error` output that is present only when an error occurs:
+It is recommended to handle errors using the standard `outputs` structure. A common pattern is to include error properties that are populated only when an error occurs:
 
 ```yaml
 outputs:
-  result:
-    type: object
-    description: The successful result of the operation (populated on success)
-  error:
-    type: object
-    description: Error information (populated only when an error occurs)
-    properties:
-      message:
-        type: string
-        description: Human-readable error message
-      code:
-        type: string
-        description: Machine-readable error code
-      details:
-        type: object
-        description: Additional error details
+  type: object
+  properties:
+    result:
+      type: object
+      description: The successful result of the operation (populated on success)
+    error:
+      type: object
+      description: Error information (populated only when an error occurs)
+      properties:
+        message:
+          type: string
+          description: Human-readable error message
+        code:
+          type: string
+          description: Machine-readable error code
+        details:
+          type: object
+          description: Additional error details
+  oneOf:
+    - required: ["result"]
+    - required: ["error"]
 ```
 
 Example implementation in a Python task:
