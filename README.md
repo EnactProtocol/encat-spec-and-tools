@@ -286,33 +286,27 @@ outputs:
 Environment variables define the configuration and secrets required for capability execution. These are resolved at runtime by the Enact execution environment. All environment variables are treated as secrets by default to enhance security.
 ```yaml
 env:
-  type: object
-  properties:
-    vars:
-      type: object
-      properties:
-        ENACT_AUTH_IDENTITY_KEY:
-          type: string
-          description: "API key for identity verification service"
-        ENACT_EMAIL_SERVICE_KEY:
-          type: string
-          description: "API key for email service"
-        ENACT_SLACK_WEBHOOK_URL:
-          type: string
-          description: "Webhook URL for Slack notifications"
-          default: "https://hooks.slack.com/services/default-path"
-      required: ["ENACT_AUTH_IDENTITY_KEY", "ENACT_EMAIL_SERVICE_KEY"]
+  vars:
+    ENACT_AUTH_IDENTITY_KEY:
+      type: string
+      description: "API key for identity verification service"
+    ENACT_EMAIL_SERVICE_KEY:
+      type: string
+      description: "API key for email service"
+    ENACT_SLACK_WEBHOOK_URL:
+      type: string
+      description: "Webhook URL for Slack notifications"
+      default: "https://hooks.slack.com/services/default-path"
   resources:
     memory: "1GB"
     timeout: "300s"
-  required: ["vars"]
 ```
 
 **Environment Variable Properties:**
-- `name`: Identifier for the environment variable
+- `type`: Data type of the environment variable (string, number, boolean, etc.)
 - `description`: Human-readable description of the variable's purpose
-- `required`: Whether the variable must be provided (`true`/`false`)
-- `schema`: Full JSON Schema for the environment variable
+- `default`: Optional default value if not provided
+- Additional JSON Schema validation keywords as needed
 
 All environment variables are treated as secrets by default and should be stored securely and never logged or exposed in execution traces.
 
