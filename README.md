@@ -35,18 +35,15 @@ flowchart TB
     
     subgraph "Enact Ecosystem"
         Registry[Capability Registry]
-        AtomicCap[Atomic Capabilities]
-        WorkflowCap[Workflow Capabilities]
+        Capabilities[Capabilities]
         ExecEnv[Execution Environment]
     end
     
     LLM --> ToolRouter
     ToolRouter <--> Registry
     
-    Registry --> AtomicCap
-    Registry --> WorkflowCap
-    AtomicCap --> ExecEnv
-    WorkflowCap --> ExecEnv
+    Registry --> Capabilities
+    Capabilities --> ExecEnv
     
     subgraph "External Integrations"
         APIs[External APIs]
@@ -63,7 +60,7 @@ flowchart TB
     classDef external fill:#F59E0B,stroke:#92400E,stroke-width:1px,color:white
     
     class LLM,ToolRouter ai
-    class Registry,AtomicCap,WorkflowCap,ExecEnv enact
+    class Registry,Capabilities,ExecEnv enact
     class APIs,Services,Data external
 ```
 
