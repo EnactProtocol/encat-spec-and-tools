@@ -13,15 +13,11 @@ enact: 1.0.0
 id: HelloWorld
 description: A simple Hello World example
 version: 1.0.0
-type: atomic
-tasks:
-  - id: sayHello
-    type: script
-    language: python
-    code: |
-      def main():
-        print("Hello World")
-        return {"message": "Hello World"}
+type: python
+run: |
+  def main():
+    print("Hello World")
+    return {"message": "Hello World"}
 ```
 
 Enact addresses a critical need in the AI ecosystem: as AI agents become more capable, they require reliable access to a diverse set of reliable tools and capabilities. Enact provides a standardized protocol for defining, discovering, and executing tasks that AI agents can use at runtime. Think of it as a universal interface between AI agents and the tools they need to get things done.
@@ -34,25 +30,23 @@ The Enact Protocol consists of several key components that work together:
 flowchart TB
     subgraph "AI System"
         LLM[Large Language Model]
-        MCP[Model Context Protocol]
         ToolRouter[Tool Router]
     end
     
     subgraph "Enact Ecosystem"
         Registry[Capability Registry]
         AtomicCap[Atomic Capabilities]
-        CompositeCap[Composite Capabilities]
+        WorkflowCap[Workflow Capabilities]
         ExecEnv[Execution Environment]
     end
     
-    LLM --> MCP
-    MCP --> ToolRouter
+    LLM --> ToolRouter
     ToolRouter <--> Registry
     
     Registry --> AtomicCap
-    Registry --> CompositeCap
+    Registry --> WorkflowCap
     AtomicCap --> ExecEnv
-    CompositeCap --> ExecEnv
+    WorkflowCap --> ExecEnv
     
     subgraph "External Integrations"
         APIs[External APIs]
@@ -64,26 +58,14 @@ flowchart TB
     ExecEnv <--> Services
     ExecEnv <--> Data
     
-    %% Connection explanations
     classDef ai fill:#6366F1,stroke:#312E81,stroke-width:1px,color:white
     classDef enact fill:#10B981,stroke:#065F46,stroke-width:1px,color:white
     classDef external fill:#F59E0B,stroke:#92400E,stroke-width:1px,color:white
-    classDef primary fill:#EC4899,stroke:#831843,stroke-width:1px,color:white
-    classDef secondary fill:#8B5CF6,stroke:#5B21B6,stroke-width:1px,color:white
     
-    class LLM,MCP,ToolRouter ai
-    class Registry,AtomicCap,CompositeCap,ExecEnv enact
+    class LLM,ToolRouter ai
+    class Registry,AtomicCap,WorkflowCap,ExecEnv enact
     class APIs,Services,Data external
-    
-    %% Add descriptions
-    MCP -.-> |"Standardized Context<br/>Management"| ToolRouter
-    ToolRouter -.-> |"Tool<br/>Discovery"| Registry
-    Registry -.-> |"Capability<br/>Resolution"| AtomicCap
-    Registry -.-> |"Workflow<br/>Resolution"| CompositeCap
-    ExecEnv -.-> |"Executes<br/>Capabilities"| AtomicCap
-    ExecEnv -.-> |"Orchestrates<br/>Workflows"| CompositeCap
 ```
-
 
 ## Core Concepts
 
@@ -97,15 +79,16 @@ enact: 1.0.0              # Protocol version
 id: string                # Unique identifier
 description: string       # What the capability does
 version: 1.0.0            # Capability version
-type: atomic|composite    # Capability type
-authors:                  # List of authors
+
+type: python|javascript|prompt|shell|workflow  # Execution environment
+authors:                  # List of authors (optional)
   - name: string
     email: string         # Optional
 inputs:                   # Input parameters (JSON Schema)
   type: object
   properties: {}          # JSON Schema properties
   required: []            # Required property names
-tasks: array              # Task definitions (for atomic capabilities)
+run: string|array         # Implementation code or composite workflow
 outputs:                  # Output parameters (JSON Schema)
   type: object
   properties: {}          # JSON Schema properties
@@ -120,8 +103,6 @@ Atomic capabilities are the basic building blocks of the Enact Protocol:
 - No dependencies on other capabilities
 - Example: Making an API call, executing a script
 
-In atomic capabilities, tasks are executed sequentially in the order they are defined in the `tasks` array.
-
 **Example: Temperature Converter**
 
 ```yaml
@@ -129,7 +110,7 @@ enact: 1.0.0
 id: TemperatureConverter
 description: Converts temperature from Celsius to Fahrenheit
 version: 1.0.0
-type: atomic
+type: python
 authors:
   - name: John Smith
     email: john@example.com
@@ -141,14 +122,10 @@ inputs:
       description: Temperature in Celsius
       minimum: -273.15
   required: ["celsius"]
-tasks:
-  - id: convertTemperature
-    type: script
-    language: python
-    code: |
-      def main(celsius):
-        fahrenheit = celsius * 9/5 + 32
-        return {"fahrenheit": fahrenheit}
+run: |
+  def main(celsius):
+    fahrenheit = celsius * 9/5 + 32
+    return {"fahrenheit": fahrenheit}
 outputs:
   type: object
   properties:
@@ -158,45 +135,15 @@ outputs:
   required: ["fahrenheit"]
 ```
 
-### Composite Capabilities
+### Types
 
-Composite capabilities combine multiple atomic capabilities or other composite capabilities to create more complex workflows.
+Enact supports various execution environments specified directly in the `type` field:
 
-For more details on composite capabilities, please see the [Composite Capabilities documentation](./composite-capabilities.md).
-
-### Tasks
-
-Tasks represent the executable units within a capability. Each task must have:
-
-```yaml
-tasks:
-  - id: uniqueId          # Task identifier
-    type: string          # Task type (script, agent, prompt, shell)
-    language: string      # For script tasks
-    code: string          # Implementation
-```
-
-#### Entry Points for Tasks
-
-Tasks can specify an entry point function to execute within the code block using the `entry_point` field:
-
-```yaml
-tasks:
-  - id: uniqueId
-    type: script
-    language: string
-    entry_point: functionName  # Function to call within the code
-    code: |
-      def main(param1, param2):
-        # This function will be called by default if no entry_point is specified
-        return {"result": process(param1, param2)}
-        
-      def functionName(param1, param2):
-        # This function will be called when specified as entry_point
-        return {"result": special_process(param1, param2)}
-```
-
-By default, if no `entry_point` is specified, the execution environment will look for a function named `main` in the code. The input parameters from the capability's `inputs` section are passed as arguments to the specified entry function.
+- **`python`**: Execute Python code
+- **`javascript`**: Execute JavaScript code
+- **`shell`**: Execute shell commands
+- **`prompt`**: Return a prompt template for LLMs
+- **`workflow`**: Chain multiple capabilities together
 
 ### Parameter Management with JSON Schema
 
@@ -230,14 +177,13 @@ Enact's parameter definitions are fully compliant with [JSON Schema](https://jso
 
 ### Dependencies
 
-Dependencies define the runtime requirements for executing a capability. They can specify language versions, packages, and other external requirements.
+Dependencies define the runtime requirements for executing a capability.
 
 ```yaml         
 dependencies:
-  version: string     # Runtime version requirement
-  packages:           # Required packages
-    - name: string    # Package name
-      version: string # Version specifier
+  packages:
+    - pandas>=2.0.0     # Simple package and version specifier
+    - numpy>=1.24.0
 ```
 
 **Example with Dependencies:**
@@ -247,11 +193,7 @@ enact: 1.0.0
 id: DataAnalyzer
 description: Analyzes numerical data and creates visualizations
 version: 1.0.0
-type: atomic
-authors:
-  - name: Jane Doe
-    email: jane@example.com
-
+type: python
 inputs:
   type: object
   properties:
@@ -268,46 +210,26 @@ inputs:
           type: string
           enum: ["bar", "line", "scatter"]
           default: "line"
-        include_statistics:
-          type: boolean
-          default: true
   required: ["data"]
-
-tasks:
-  - id: analyzeData
-    type: script
-    language: python
-    dependencies:
-      version: ">=3.9,<4.0"
-      packages:
-        - name: pandas
-          version: ">=2.0.0,<3.0.0"
-        - name: numpy
-          version: ">=1.24.0"
-        - name: matplotlib
-          version: ">=3.7.0"
-    code: |
-      def main(data, options=None):
-          import pandas as pd
-          # Implementation using pandas, numpy, and matplotlib...
-
+dependencies:
+  packages:
+    - pandas>=2.0.0
+    - numpy>=1.24.0
+    - matplotlib>=3.7.0
+run: |
+  import pandas as pd
+  import numpy as np
+  import matplotlib.pyplot as plt
+  
+  def main(data, options=None):
+      # Implementation using pandas, numpy, and matplotlib...
+      
 outputs:
   type: object
   properties:
     analysis:
       type: object
       description: Statistical analysis results
-      properties:
-        mean:
-          type: number
-        median:
-          type: number
-        std:
-          type: number
-        min:
-          type: number
-        max:
-          type: number
     visualization:
       type: string
       format: binary
@@ -317,49 +239,35 @@ outputs:
 
 ### Environment Variables
 
-Environment variables define the configuration and secrets required for capability execution. These are resolved at runtime by the Enact execution environment. All environment variables are treated as secrets by default to enhance security.
+Environment variables define the configuration and secrets required for capability execution.
 
 ```yaml
 env:
   vars:
-    ENACT_AUTH_IDENTITY_KEY:
+    API_KEY:
       type: string
-      description: "API key for identity verification service"
-      source: "https://identity-service.example.com/api-keys"
-    ENACT_EMAIL_SERVICE_KEY:
-      type: string
-      description: "API key for email service"
-    ENACT_SLACK_WEBHOOK_URL:
-      type: string
-      description: "Webhook URL for Slack notifications"
-      default: "https://hooks.slack.com/services/default-path"
+      description: "API key for the external service"
+      source: "https://api.example.com/get-api-key"
+    TIMEOUT:
+      type: number
+      description: "Request timeout in seconds"
+      default: 30
   resources:
-    memory: "1GB"
-    timeout: "300s"
+    memory: "512MB"  # Required memory allocation
+    timeout: "60s"   # Maximum execution time
 ```
 
 **Environment Variable Properties:**
-- `type`: Data type of the environment variable (string, number, boolean, etc.)
+- `type`: Data type of the environment variable
 - `description`: Human-readable description of the variable's purpose
+- `source`: Optional URL or instructions for obtaining the variable
 - `default`: Optional default value if not provided
-- Additional JSON Schema validation keywords as needed
 
-All environment variables are treated as secrets by default and should be stored securely and never logged or exposed in execution traces.
-
-### Resource Requirements
-
-Resource requirements define the computational resources needed for capability execution:
-
-```yaml
-env:
-  resources:
-    memory: "1GB"     # Required memory allocation
-    timeout: "300s"   # Maximum execution time
-```
+All environment variables are treated as secrets by default and should be stored securely.
 
 ### Error Handling
 
-It is recommended to handle errors using the standard `outputs` structure. A common pattern is to include error properties that are populated only when an error occurs:
+It is recommended to handle errors using the standard `outputs` structure:
 
 ```yaml
 outputs:
@@ -367,7 +275,7 @@ outputs:
   properties:
     result:
       type: object
-      description: The successful result of the operation (populated on success)
+      description: The successful result of the operation
     error:
       type: object
       description: Error information (populated only when an error occurs)
@@ -386,21 +294,9 @@ outputs:
     - required: ["error"]
 ```
 
-### Task Types
-
-Enact supports the following task types:
-
-| Type | Description | Status |
-|------|-------------|--------|
-| `script` | Execute code in a specified language | Available |
-| `agent` | Agent operations | Coming soon |
-| `prompt` | Return a prompt | Coming soon |
-| `shell` | Execute shell commands | Coming soon |
-
-
 ## Schema Validation
 
-Capabilities can be validated against the [Enact JSON Schema](./schema/enact-schema.json) to ensure they conform to the protocol specification.
+Capabilities can be validated against the Enact JSON Schema to ensure they conform to the protocol specification.
 
 ## License
 

@@ -98,6 +98,10 @@
                 "maximum": {
                     "type": "number",
                     "description": "Maximum value for numeric types"
+                },
+                "source": {
+                    "type": "string",
+                    "description": "Source or instructions for obtaining the value"
                 }
             }
         }
@@ -108,8 +112,7 @@
         "id",
         "description",
         "version",
-        "type",
-        "authors"
+        "type"
     ],
     "properties": {
         "enact": {
@@ -134,8 +137,11 @@
             "type": "string",
             "description": "Type of capability",
             "enum": [
-                "atomic",
-                "composite"
+                "python",
+                "javascript",
+                "shell",
+                "prompt",
+                "workflow"
             ]
         },
         "authors": {
@@ -201,160 +207,35 @@
             "type": "object",
             "description": "Runtime dependencies for the capability",
             "properties": {
-                "version": {
-                    "type": "string",
-                    "description": "Runtime version requirement"
-                },
                 "packages": {
                     "type": "array",
                     "description": "Required packages",
                     "items": {
-                        "type": "object",
-                        "required": [
-                            "name"
-                        ],
-                        "properties": {
-                            "name": {
-                                "type": "string",
-                                "description": "Package name"
-                            },
-                            "version": {
-                                "type": "string",
-                                "description": "Version specifier"
-                            }
-                        }
+                        "type": "string",
+                        "description": "Package name with optional version specifier (e.g., 'pandas>=2.0.0')"
                     }
                 }
             }
         },
-        "tasks": {
-            "type": "array",
-            "description": "List of tasks (for atomic capabilities)",
-            "items": {
-                "type": "object",
-                "required": [
-                    "id",
-                    "type"
-                ],
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "description": "Unique identifier for the task"
-                    },
-                    "type": {
-                        "type": "string",
-                        "description": "Type of task",
-                        "enum": [
-                            "script",
-                            "request",
-                            "agent",
-                            "prompt",
-                            "shell"
-                        ]
-                    },
-                    "language": {
-                        "type": "string",
-                        "description": "Programming language for script tasks"
-                    },
-                    "code": {
-                        "type": "string",
-                        "description": "Code for script tasks"
-                    },
-                    "entryPoint": {
-                        "type": "string",
-                        "description": "Function name to call as the entry point within the code (defaults to 'main' if not specified)"
-                    },
-                    "dependencies": {
-                        "type": "object",
-                        "description": "Dependencies for this specific task",
-                        "properties": {
-                            "version": {
-                                "type": "string",
-                                "description": "Runtime version requirement"
-                            },
-                            "packages": {
-                                "type": "array",
-                                "description": "Required packages",
-                                "items": {
-                                    "type": "object",
-                                    "required": [
-                                        "name"
-                                    ],
-                                    "properties": {
-                                        "name": {
-                                            "type": "string",
-                                            "description": "Package name"
-                                        },
-                                        "version": {
-                                            "type": "string",
-                                            "description": "Version specifier"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "default": []
-        },
-        "imports": {
-            "type": "array",
-            "description": "Imported capabilities (for composite capabilities)",
-            "items": {
-                "type": "object",
-                "required": [
-                    "id",
-                    "version"
-                ],
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "description": "Identifier of the imported capability"
-                    },
-                    "version": {
-                        "type": "string",
-                        "description": "Version of the imported capability"
-                    }
-                }
-            },
-            "default": []
-        },
-        "flow": {
-            "type": "object",
-            "description": "Execution flow definition (for composite capabilities)",
-            "properties": {
-                "steps": {
+        "run": {
+            "description": "Implementation code or workflow steps",
+            "oneOf": [
+                {
+                    "type": "string",
+                    "description": "Implementation code for atomic capabilities"
+                },
+                {
                     "type": "array",
-                    "description": "List of steps in the execution flow",
+                    "description": "Workflow steps for workflow capabilities",
                     "items": {
                         "type": "object",
-                        "required": [
-                            "capability"
-                        ],
-                        "properties": {
-                            "capability": {
-                                "type": "string",
-                                "description": "ID of the capability to execute"
-                            },
-                            "inputs": {
-                                "type": "object",
-                                "description": "Input mappings for the capability"
-                            },
-                            "dependencies": {
-                                "type": "array",
-                                "description": "List of capabilities that this step depends on",
-                                "items": {
-                                    "type": "string"
-                                }
-                            }
+                        "additionalProperties": {
+                            "type": "object",
+                            "description": "Parameters to pass to the capability"
                         }
                     }
                 }
-            },
-            "default": {
-                "steps": []
-            }
+            ]
         },
         "outputs": {
             "type": "object",
@@ -411,23 +292,6 @@
                         "timeout": {
                             "type": "string",
                             "description": "Maximum execution time"
-                        }
-                    }
-                }
-            }
-        },
-        "schema": {
-            "type": "object",
-            "description": "Schema configuration options",
-            "properties": {
-                "defaults": {
-                    "type": "object",
-                    "description": "Default values for schema properties",
-                    "properties": {
-                        "entryPoint": {
-                            "type": "string",
-                            "description": "Default entry point function name",
-                            "default": "main"
                         }
                     }
                 }
