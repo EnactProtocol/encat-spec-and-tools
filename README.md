@@ -65,13 +65,15 @@ flowchart TB
     ExecEnv <--> Data
     
     %% Connection explanations
-    classDef primary fill:#f9f,stroke:#333,stroke-width:2px
-    classDef secondary fill:#bbf,stroke:#333,stroke-width:1px
-    classDef tertiary fill:#dfd,stroke:#333,stroke-width:1px
+    classDef ai fill:#6366F1,stroke:#312E81,stroke-width:1px,color:white
+    classDef enact fill:#10B981,stroke:#065F46,stroke-width:1px,color:white
+    classDef external fill:#F59E0B,stroke:#92400E,stroke-width:1px,color:white
+    classDef primary fill:#EC4899,stroke:#831843,stroke-width:1px,color:white
+    classDef secondary fill:#8B5CF6,stroke:#5B21B6,stroke-width:1px,color:white
     
-    class MCP,Registry primary
-    class LLM,ToolRouter,ExecEnv secondary
-    class AtomicCap,CompositeCap,APIs,Services,Data tertiary
+    class LLM,MCP,ToolRouter ai
+    class Registry,AtomicCap,CompositeCap,ExecEnv enact
+    class APIs,Services,Data external
     
     %% Add descriptions
     MCP -.-> |"Standardized Context<br/>Management"| ToolRouter
