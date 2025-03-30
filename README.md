@@ -31,7 +31,6 @@ Enact addresses a critical need in the AI ecosystem: as AI agents become more ca
 The Enact Protocol consists of several key components that work together:
 
 ```mermaid
-sequenceDiagram
 flowchart TB
     subgraph "AI System"
         LLM[Large Language Model]
