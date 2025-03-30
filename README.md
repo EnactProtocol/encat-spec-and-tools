@@ -166,6 +166,29 @@ tasks:
     code: string          # Implementation
 ```
 
+#### Entry Points for Tasks
+
+Tasks can specify an entry point function to execute within the code block using the `entryPoint` field:
+
+```yaml
+tasks:
+  - id: uniqueId
+    type: script
+    language: string
+    entryPoint: functionName  # Function to call within the code
+    code: |
+      def main(param1, param2):
+        # This function will be called by default if no entryPoint is specified
+        return {"result": process(param1, param2)}
+        
+      def functionName(param1, param2):
+        # This function will be called when specified as entryPoint
+        return {"result": special_process(param1, param2)}
+```
+
+By default, if no `entryPoint` is specified, the execution environment will look for a function named `main` in the code. The input parameters from the capability's `inputs` section are passed as arguments to the specified entry function.
+```
+
 ### Parameter Management with JSON Schema
 
 **Input Parameters with JSON Schema:**
@@ -255,7 +278,8 @@ tasks:
         - name: matplotlib
           version: ">=3.7.0"
     code: |
-      # Implementation using pandas, numpy, and matplotlib
+      def main(data, options=None):
+          # Implementation using pandas, numpy, and matplotlib
 
 outputs:
   type: object
@@ -348,27 +372,6 @@ outputs:
   oneOf:
     - required: ["result"]
     - required: ["error"]
-```
-
-Example implementation in a Python task:
-
-```python
-try:
-    # Task implementation
-    result = process_data(data)
-    return {
-        "result": result,
-        # No error field when successful
-    }
-except Exception as e:
-    return {
-        # No result field when error occurs
-        "error": {
-            "message": "Failed to process data",
-            "code": "DATA_PROCESSING_ERROR",
-            "details": {"exception": str(e)}
-        }
-    }
 ```
 
 ### Task Types
