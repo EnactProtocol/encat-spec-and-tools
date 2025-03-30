@@ -306,8 +306,8 @@ The Enact Protocol works with MCP through two primary mechanisms:
 ```mermaid
 flowchart LR
     AI["AI Assistant"] <--> MCP["MCP Server"]
-    MCP <-->|"Search & Fetch\nCapabilities"| Registry["Enact Registry"]
-    MCP -->|"Execute\nCapabilities"| Execution["Code Execution"]
+    MCP <-->|"Search & Fetch Capabilities"| Registry["Enact Registry"]
+    MCP -->|"Execute Capabilities"| Execution["Code Execution"]
     
     classDef blue fill:#3b82f6,stroke:#1e40af,color:white
     classDef green fill:#10b981,stroke:#065f46,color:white
