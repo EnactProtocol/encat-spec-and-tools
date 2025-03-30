@@ -68,8 +68,7 @@ flowchart TB
 
 ### Capabilities
 
-A **capability** is a unit of functionality defined in YAML that follows the Enact Protocol Schema.
-
+Capabilities are the basic building blocks of the Enact Protocol. Each **capability** is defined in YAML that follows the Enact Protocol Schema.
 **Required Fields:**
 ```yaml
 enact: 1.0.0              # Protocol version
@@ -92,13 +91,6 @@ outputs:                  # Output parameters (JSON Schema)
   required: []            # Required property names
 ```
 
-### Atomic Capabilities
-
-Atomic capabilities are the basic building blocks of the Enact Protocol:
-
-- Single, self-contained operations
-- No dependencies on other capabilities
-- Example: Making an API call, executing a script
 
 **Example: Temperature Converter**
 
@@ -295,6 +287,8 @@ outputs:
 
 Capabilities can be validated against the Enact JSON Schema to ensure they conform to the protocol specification.
 
+## Contributing
+We welcome contributions to the Enact Protocol! 
 
 > "Perfection is achieved not when there is nothing more to add, but when there is nothing left to take away."
 >
