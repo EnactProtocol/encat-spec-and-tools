@@ -4,23 +4,6 @@
 
 The **Enact Protocol (Enact)** provides a standardized framework for defining and executing tasks. It enables the creation of reusable, composable, and verifiable capabilities that can be discovered and executed by AI agents and other automated systems.
 
-## Table of Contents
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Core Concepts](#core-concepts)
-  - [Capabilities](#capabilities)
-  - [Atomic Capabilities](#atomic-capabilities)
-  - [Composite Capabilities](#composite-capabilities)
-  - [Tasks](#tasks)
-  - [Parameter Management](#parameter-management-with-json-schema)
-  - [Dependencies](#dependencies)
-  - [Environment Variables](#environment-variables)
-  - [Resource Requirements](#resource-requirements)
-  - [Error Handling](#error-handling)
-  - [Task Types](#task-types)
-- [Schema Validation](#schema-validation)
-- [License](#license)
-
 ## Overview
 
 At its simplest, an Enact capability is a task with a structured description in YAML:
@@ -47,31 +30,59 @@ Enact addresses a critical need in the AI ecosystem: as AI agents become more ca
 
 The Enact Protocol consists of several key components that work together:
 
+```mermaid
+sequenceDiagram
+flowchart TB
+    subgraph "AI System"
+        LLM[Large Language Model]
+        MCP[Model Context Protocol]
+        ToolRouter[Tool Router]
+    end
+    
+    subgraph "Enact Ecosystem"
+        Registry[Capability Registry]
+        AtomicCap[Atomic Capabilities]
+        CompositeCap[Composite Capabilities]
+        ExecEnv[Execution Environment]
+    end
+    
+    LLM --> MCP
+    MCP --> ToolRouter
+    ToolRouter <--> Registry
+    
+    Registry --> AtomicCap
+    Registry --> CompositeCap
+    AtomicCap --> ExecEnv
+    CompositeCap --> ExecEnv
+    
+    subgraph "External Integrations"
+        APIs[External APIs]
+        Services[Cloud Services]
+        Data[Data Sources]
+    end
+    
+    ExecEnv <--> APIs
+    ExecEnv <--> Services
+    ExecEnv <--> Data
+    
+    %% Connection explanations
+    classDef primary fill:#f9f,stroke:#333,stroke-width:2px
+    classDef secondary fill:#bbf,stroke:#333,stroke-width:1px
+    classDef tertiary fill:#dfd,stroke:#333,stroke-width:1px
+    
+    class MCP,Registry primary
+    class LLM,ToolRouter,ExecEnv secondary
+    class AtomicCap,CompositeCap,APIs,Services,Data tertiary
+    
+    %% Add descriptions
+    MCP -.-> |"Standardized Context<br/>Management"| ToolRouter
+    ToolRouter -.-> |"Tool<br/>Discovery"| Registry
+    Registry -.-> |"Capability<br/>Resolution"| AtomicCap
+    Registry -.-> |"Workflow<br/>Resolution"| CompositeCap
+    ExecEnv -.-> |"Executes<br/>Capabilities"| AtomicCap
+    ExecEnv -.-> |"Orchestrates<br/>Workflows"| CompositeCap
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     Enact Ecosystem                         │
-│                                                             │
-│  ┌───────────────┐      ┌────────────────┐                  │
-│  │ AI Agents &   │      │  Capability    │                  │
-│  │ Applications  │◄────►│  Registry      │                  │
-│  └───────────────┘      └────────────────┘                  │
-│          ▲                      ▲                           │
-│          │                      │                           │
-│          ▼                      │                           │
-│  ┌───────────────┐              │                           │
-│  │   Execution   │              │                           │
-│  │  Environment  │◄─────────────┘                           │
-│  └───────────────┘                                          │
-│          ▲                                                  │
-│          │                                                  │
-│          ▼                                                  │
-│  ┌───────────────┐      ┌────────────────┐                  │
-│  │ Atomic        │      │  Composite     │                  │
-│  │ Capabilities  │◄────►│  Capabilities  │                  │
-│  └───────────────┘      └────────────────┘                  │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
+
 
 ## Core Concepts
 
@@ -166,25 +177,25 @@ tasks:
 
 #### Entry Points for Tasks
 
-Tasks can specify an entry point function to execute within the code block using the `entryPoint` field:
+Tasks can specify an entry point function to execute within the code block using the `entry_point` field:
 
 ```yaml
 tasks:
   - id: uniqueId
     type: script
     language: string
-    entryPoint: functionName  # Function to call within the code
+    entry_point: functionName  # Function to call within the code
     code: |
       def main(param1, param2):
-        # This function will be called by default if no entryPoint is specified
+        # This function will be called by default if no entry_point is specified
         return {"result": process(param1, param2)}
         
       def functionName(param1, param2):
-        # This function will be called when specified as entryPoint
+        # This function will be called when specified as entry_point
         return {"result": special_process(param1, param2)}
 ```
 
-By default, if no `entryPoint` is specified, the execution environment will look for a function named `main` in the code. The input parameters from the capability's `inputs` section are passed as arguments to the specified entry function.
+By default, if no `entry_point` is specified, the execution environment will look for a function named `main` in the code. The input parameters from the capability's `inputs` section are passed as arguments to the specified entry function.
 
 ### Parameter Management with JSON Schema
 
@@ -313,6 +324,7 @@ env:
     ENACT_AUTH_IDENTITY_KEY:
       type: string
       description: "API key for identity verification service"
+      source: "https://identity-service.example.com/api-keys"
     ENACT_EMAIL_SERVICE_KEY:
       type: string
       description: "API key for email service"
