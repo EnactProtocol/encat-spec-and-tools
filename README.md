@@ -305,7 +305,7 @@ The Enact Protocol works with MCP through two primary mechanisms:
 
 
 ## Contributing
-We welcome contributions to the Enact Protocol! You can start by making a pr or joining our [discrord](https://discord.gg/mMfxvMtHyS)
+We welcome contributions to the Enact Protocol! You can start by making a pr or joining our [discord](https://discord.gg/mMfxvMtHyS)
 
 > "Perfection is achieved not when there is nothing more to add, but when there is nothing left to take away."
 >
