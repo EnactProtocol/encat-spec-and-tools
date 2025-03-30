@@ -295,6 +295,11 @@ outputs:
 
 Capabilities can be validated against the Enact JSON Schema to ensure they conform to the protocol specification.
 
+
+> "Perfection is achieved not when there is nothing more to add, but when there is nothing left to take away."
+>
+> — *Antoine de Saint-Exupéry*
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
