@@ -287,8 +287,25 @@ outputs:
 
 Capabilities can be validated against the Enact JSON Schema to ensure they conform to the protocol specification.
 
+## Using with Model Context Protocol (MCP)
+
+Enact capabilities can be dynamically discovered and executed through the Model Context Protocol, enabling AI agents to access the full range of capabilities in the Enact ecosystem.
+
+### MCP Integration
+
+The Enact Protocol works with MCP through two primary mechanisms:
+
+1. **Dynamic Capability Discovery**: 
+   - The `enact-search-capabilities` MCP tool allows searching the Enact registry for capabilities that match specific criteria
+   - Found capabilities are automatically registered as MCP tools, making them immediately available for use
+
+2. **Direct Capability Execution**:
+   - The `execute-capability-by-id` MCP tool provides direct execution of any Enact capability using its ID
+   - This allows for execution of capabilities that may not be pre-registered as tools
+
+
 ## Contributing
-We welcome contributions to the Enact Protocol! 
+We welcome contributions to the Enact Protocol! You can start by making a pr or joining our [discrord](https://discord.gg/mMfxvMtHyS)
 
 > "Perfection is achieved not when there is nothing more to add, but when there is nothing left to take away."
 >
