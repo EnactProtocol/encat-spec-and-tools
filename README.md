@@ -4,6 +4,23 @@
 
 The **Enact Protocol (Enact)** provides a standardized framework for defining and executing tasks. It enables the creation of reusable, composable, and verifiable capabilities that can be discovered and executed by AI agents and other automated systems.
 
+## Table of Contents
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Core Concepts](#core-concepts)
+  - [Capabilities](#capabilities)
+  - [Atomic Capabilities](#atomic-capabilities)
+  - [Composite Capabilities](#composite-capabilities)
+  - [Tasks](#tasks)
+  - [Parameter Management](#parameter-management-with-json-schema)
+  - [Dependencies](#dependencies)
+  - [Environment Variables](#environment-variables)
+  - [Resource Requirements](#resource-requirements)
+  - [Error Handling](#error-handling)
+  - [Task Types](#task-types)
+- [Schema Validation](#schema-validation)
+- [License](#license)
+
 ## Overview
 
 At its simplest, an Enact capability is a task with a structured description in YAML:
@@ -12,17 +29,21 @@ At its simplest, an Enact capability is a task with a structured description in 
 enact: 1.0.0
 id: HelloWorld
 description: A simple Hello World example
+version: 1.0.0
+type: atomic
 tasks:
   - id: sayHello
     type: script
     language: python
     code: |
-      print("Hello World")
+      def main():
+        print("Hello World")
+        return {"message": "Hello World"}
 ```
 
 Enact addresses a critical need in the AI ecosystem: as AI agents become more capable, they require reliable access to a diverse set of reliable tools and capabilities. Enact provides a standardized protocol for defining, discovering, and executing tasks that AI agents can use at runtime. Think of it as a universal interface between AI agents and the tools they need to get things done.
 
-### Architecture
+## Architecture
 
 The Enact Protocol consists of several key components that work together:
 
@@ -52,38 +73,6 @@ The Enact Protocol consists of several key components that work together:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-```yaml
-enact: 1.0.0
-id: TemperatureConverter
-description: Converts temperature from Celsius to Fahrenheit
-version: 1.0.0
-type: atomic
-authors:
-  - name: Your Name
-    email: your.email@example.com
-inputs:
-  type: object
-  properties:
-    celsius:
-      type: number
-      description: Temperature in Celsius
-  required: ["celsius"]
-tasks:
-  - id: convertTemperature
-    type: script
-    language: python
-    code: |
-      fahrenheit = celsius * 9/5 + 32
-      return {"fahrenheit": fahrenheit}
-outputs:
-    type: object
-    properties:
-      fahrenheit:
-        type: number
-        description: Temperature in Fahrenheit
-    required: ["fahrenheit"]
-```
-
 ## Core Concepts
 
 ### Capabilities
@@ -99,6 +88,7 @@ version: 1.0.0            # Capability version
 type: atomic|composite    # Capability type
 authors:                  # List of authors
   - name: string
+    email: string         # Optional
 inputs:                   # Input parameters (JSON Schema)
   type: object
   properties: {}          # JSON Schema properties
@@ -120,29 +110,33 @@ Atomic capabilities are the basic building blocks of the Enact Protocol:
 
 In atomic capabilities, tasks are executed sequentially in the order they are defined in the `tasks` array.
 
+**Example: Temperature Converter**
+
 ```yaml
 enact: 1.0.0
-id: SimpleConverter
+id: TemperatureConverter
 description: Converts temperature from Celsius to Fahrenheit
 version: 1.0.0
 type: atomic
 authors:
   - name: John Smith
+    email: john@example.com
 inputs:
-    type: object
-    properties:
-      celsius:
-        type: number
-        description: Temperature in Celsius
-        minimum: -273.15
-    required: ["celsius"]
+  type: object
+  properties:
+    celsius:
+      type: number
+      description: Temperature in Celsius
+      minimum: -273.15
+  required: ["celsius"]
 tasks:
   - id: convertTemperature
     type: script
     language: python
     code: |
-      fahrenheit = celsius * 9/5 + 32
-      return {"fahrenheit": fahrenheit}
+      def main(celsius):
+        fahrenheit = celsius * 9/5 + 32
+        return {"fahrenheit": fahrenheit}
 outputs:
   type: object
   properties:
@@ -152,7 +146,11 @@ outputs:
   required: ["fahrenheit"]
 ```
 
-With enact you can also create more complicated workflows. For more details on composite capabilities, please see the [Composite Capabilities documentation](./composite-capabilities.md).
+### Composite Capabilities
+
+Composite capabilities combine multiple atomic capabilities or other composite capabilities to create more complex workflows.
+
+For more details on composite capabilities, please see the [Composite Capabilities documentation](./composite-capabilities.md).
 
 ### Tasks
 
@@ -161,7 +159,7 @@ Tasks represent the executable units within a capability. Each task must have:
 ```yaml
 tasks:
   - id: uniqueId          # Task identifier
-    type: string          # Task type
+    type: string          # Task type (script, agent, prompt, shell)
     language: string      # For script tasks
     code: string          # Implementation
 ```
@@ -187,7 +185,6 @@ tasks:
 ```
 
 By default, if no `entryPoint` is specified, the execution environment will look for a function named `main` in the code. The input parameters from the capability's `inputs` section are passed as arguments to the specified entry function.
-```
 
 ### Parameter Management with JSON Schema
 
@@ -225,13 +222,13 @@ Dependencies define the runtime requirements for executing a capability. They ca
 
 ```yaml         
 dependencies:
-    version: string     # Runtime version requirement
-    packages:           # Required packages
-      - name: string    # Package name
-        version: string # Version specifier
+  version: string     # Runtime version requirement
+  packages:           # Required packages
+    - name: string    # Package name
+      version: string # Version specifier
 ```
 
-Example with dependencies:
+**Example with Dependencies:**
 
 ```yaml
 enact: 1.0.0
@@ -279,7 +276,8 @@ tasks:
           version: ">=3.7.0"
     code: |
       def main(data, options=None):
-          # Implementation using pandas, numpy, and matplotlib
+          import pandas as pd
+          # Implementation using pandas, numpy, and matplotlib...
 
 outputs:
   type: object
@@ -308,6 +306,7 @@ outputs:
 ### Environment Variables
 
 Environment variables define the configuration and secrets required for capability execution. These are resolved at runtime by the Enact execution environment. All environment variables are treated as secrets by default to enhance security.
+
 ```yaml
 env:
   vars:

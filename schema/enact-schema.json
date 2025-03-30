@@ -260,6 +260,10 @@
                         "type": "string",
                         "description": "Code for script tasks"
                     },
+                    "entryPoint": {
+                        "type": "string",
+                        "description": "Function name to call as the entry point within the code (defaults to 'main' if not specified)"
+                    },
                     "dependencies": {
                         "type": "object",
                         "description": "Dependencies for this specific task",
@@ -407,6 +411,23 @@
                         "timeout": {
                             "type": "string",
                             "description": "Maximum execution time"
+                        }
+                    }
+                }
+            }
+        },
+        "schema": {
+            "type": "object",
+            "description": "Schema configuration options",
+            "properties": {
+                "defaults": {
+                    "type": "object",
+                    "description": "Default values for schema properties",
+                    "properties": {
+                        "entryPoint": {
+                            "type": "string",
+                            "description": "Default entry point function name",
+                            "default": "main"
                         }
                     }
                 }
