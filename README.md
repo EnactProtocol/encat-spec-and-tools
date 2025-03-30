@@ -303,6 +303,21 @@ The Enact Protocol works with MCP through two primary mechanisms:
    - The `execute-capability-by-id` MCP tool provides direct execution of any Enact capability using its ID
    - This allows for execution of capabilities that may not be pre-registered as tools
 
+```mermaid
+flowchart LR
+    AI["AI Assistant"] <--> MCP["MCP Server"]
+    MCP <-->|"Search & Fetch\nCapabilities"| Registry["Enact Registry"]
+    MCP -->|"Execute\nCapabilities"| Execution["Code Execution"]
+    
+    classDef blue fill:#3b82f6,stroke:#1e40af,color:white
+    classDef green fill:#10b981,stroke:#065f46,color:white
+    classDef purple fill:#8b5cf6,stroke:#5b21b6,color:white
+    
+    class AI blue
+    class MCP green
+    class Registry purple
+    class Execution green
+```
 
 ## Contributing
 We welcome contributions to the Enact Protocol! You can start by making a pr or joining our [discord](https://discord.gg/mMfxvMtHyS)
