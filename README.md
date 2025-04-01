@@ -50,10 +50,6 @@ flowchart TB
     MCPServer -.->|retrieves capability| CapabilityStore
     MCPServer -->|sends to| ExecEnv
     
-    ExecEnv <--> APIs
-    ExecEnv <--> Services
-    ExecEnv <--> Data
-    
     classDef ai fill:#6366F1,stroke:#312E81,stroke-width:1px,color:white
     classDef enact fill:#10B981,stroke:#065F46,stroke-width:1px,color:white
     classDef external fill:#F59E0B,stroke:#92400E,stroke-width:1px,color:white
