@@ -31,19 +31,24 @@ flowchart TB
     subgraph "AI System"
         LLM[Large Language Model]
         ToolRouter[Tool Router]
+        MCPServer[Model Context Protocol Server]
     end
     
     subgraph "Enact Ecosystem"
         Registry[Capability Registry]
-        Capabilities[Capabilities]
         ExecEnv[Execution Environment]
+        CapabilityStore[(Capability Store)]
     end
     
     LLM --> ToolRouter
-    ToolRouter <--> Registry
+    ToolRouter <--> MCPServer
+    MCPServer <-->|search-capabilities| Registry
+    MCPServer <-->|register-capability| Registry
     
-    Registry --> Capabilities
-    Capabilities --> ExecEnv
+    Registry <--> CapabilityStore
+    
+    MCPServer -.->|retrieves capability| CapabilityStore
+    MCPServer -->|sends to| ExecEnv
     
     subgraph "External Integrations"
         APIs[External APIs]
@@ -58,10 +63,12 @@ flowchart TB
     classDef ai fill:#6366F1,stroke:#312E81,stroke-width:1px,color:white
     classDef enact fill:#10B981,stroke:#065F46,stroke-width:1px,color:white
     classDef external fill:#F59E0B,stroke:#92400E,stroke-width:1px,color:white
+    classDef data fill:#EC4899,stroke:#831843,stroke-width:1px,color:white
     
-    class LLM,ToolRouter ai
+    class LLM,ToolRouter,MCPServer ai
     class Registry,Capabilities,ExecEnv enact
     class APIs,Services,Data external
+    class CapabilityStore data
 ```
 
 ## Core Concepts
