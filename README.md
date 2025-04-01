@@ -50,12 +50,6 @@ flowchart TB
     MCPServer -.->|retrieves capability| CapabilityStore
     MCPServer -->|sends to| ExecEnv
     
-    subgraph "External Integrations"
-        APIs[External APIs]
-        Services[Cloud Services]
-        Data[Data Sources]
-    end
-    
     ExecEnv <--> APIs
     ExecEnv <--> Services
     ExecEnv <--> Data
