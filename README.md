@@ -47,7 +47,6 @@ flowchart TB
     
     Registry <--> CapabilityStore
     
-    MCPServer -.->|retrieves capability| CapabilityStore
     MCPServer -->|sends to| ExecEnv
     
     classDef ai fill:#6366F1,stroke:#312E81,stroke-width:1px,color:white
