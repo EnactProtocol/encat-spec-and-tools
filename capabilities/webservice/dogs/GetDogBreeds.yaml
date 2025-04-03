@@ -1,0 +1,181 @@
+enact: 1.0.0
+id: GetDogBreeds
+description: Retrieves a list of dog breeds from the Dog API
+version: 1.0.0
+type: javascript
+authors:
+  - name: Enact Team
+    email: team@example.com
+
+inputs:
+  type: object
+  properties:
+    page:
+      type: integer
+      description: Page number for paginated results
+      default: 1
+      minimum: 1
+  required: []
+
+run: |
+  /**
+   * Retrieves a list of dog breeds from the Dog API
+   * @param {number} page - Page number for pagination (defaults to 1)
+   * @returns {object} Object containing the list of dog breeds and pagination info
+   */
+  async function main(page = 1) {
+    try {
+      // Construct the URL with pagination
+      const baseUrl = "https://dogapi.dog/api/v2/breeds";
+      const url = `${baseUrl}?page[number]=${page}`;
+      
+      // Make the API request
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Accept": "application/json"
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Transform the API response to a more usable format
+      const breeds = data.data.map(breed => ({
+        id: breed.id,
+        name: breed.attributes.name,
+        description: breed.attributes.description,
+        hypoallergenic: breed.attributes.hypoallergenic,
+        lifespan: {
+          min: breed.attributes.life.min,
+          max: breed.attributes.life.max
+        },
+        weight: {
+          male: {
+            min: breed.attributes.male_weight.min,
+            max: breed.attributes.male_weight.max
+          },
+          female: {
+            min: breed.attributes.female_weight.min,
+            max: breed.attributes.female_weight.max
+          }
+        }
+      }));
+      
+      // Extract pagination info
+      const pagination = {
+        currentPage: data.meta.pagination.current,
+        totalPages: Math.ceil(data.meta.pagination.records / breeds.length),
+        totalRecords: data.meta.pagination.records,
+        links: {
+          self: data.links.self,
+          current: data.links.current,
+          next: data.links.next,
+          last: data.links.last
+        }
+      };
+      
+      return {
+        breeds,
+        pagination
+      };
+    } catch (error) {
+      return {
+        error: {
+          message: error.message,
+          code: "API_ERROR"
+        }
+      };
+    }
+  }
+
+outputs:
+  type: object
+  properties:
+    breeds:
+      type: array
+      description: List of dog breeds
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: Unique identifier for the breed
+          name:
+            type: string
+            description: Name of the breed
+          description:
+            type: string
+            description: Description of the breed
+          hypoallergenic:
+            type: boolean
+            description: Whether the breed is hypoallergenic
+          lifespan:
+            type: object
+            description: Lifespan range in years
+            properties:
+              min:
+                type: number
+                description: Minimum lifespan in years
+              max:
+                type: number
+                description: Maximum lifespan in years
+          weight:
+            type: object
+            description: Weight ranges by gender
+            properties:
+              male:
+                type: object
+                properties:
+                  min:
+                    type: number
+                    description: Minimum weight in kg
+                  max:
+                    type: number
+                    description: Maximum weight in kg
+              female:
+                type: object
+                properties:
+                  min:
+                    type: number
+                    description: Minimum weight in kg
+                  max:
+                    type: number
+                    description: Maximum weight in kg
+    pagination:
+      type: object
+      description: Pagination information
+      properties:
+        currentPage:
+          type: integer
+          description: Current page number
+        totalPages:
+          type: integer
+          description: Total number of pages
+        totalRecords:
+          type: integer
+          description: Total number of records
+        links:
+          type: object
+          description: Pagination links
+    error:
+      type: object
+      description: Error information (only present if an error occurred)
+      properties:
+        message:
+          type: string
+          description: Human-readable error message
+        code:
+          type: string
+          description: Error code
+  oneOf:
+    - required: ["breeds", "pagination"]
+    - required: ["error"]
+
+env:
+  resources:
+    memory: "128MB"
+    timeout: "10s"

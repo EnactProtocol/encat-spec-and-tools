@@ -1,0 +1,45 @@
+enact: 1.0.0
+id: HelloWorldJS
+description: A simple Hello World example in JavaScript
+version: 1.0.0
+type: javascript
+authors:
+  - name: Enact Team
+    email: team@example.com
+
+inputs:
+  type: object
+  properties:
+    name:
+      type: string
+      description: The name to greet
+      default: "World"
+  required: []
+
+run: |
+  /**
+   * A simple Hello World function that returns a greeting message
+   * @param {string} name - The name to greet (defaults to "World")
+   * @returns {object} Object containing the greeting message
+   */
+  function main(name = "World") {
+    const greeting = `Hello, ${name}!`;
+    console.log(greeting);
+    
+    return {
+      message: greeting,
+      timestamp: new Date().toISOString()
+    };
+  }
+
+outputs:
+  type: object
+  properties:
+    message:
+      type: string
+      description: The greeting message
+    timestamp:
+      type: string
+      description: The time when the greeting was created
+      format: date-time
+  required: ["message", "timestamp"]

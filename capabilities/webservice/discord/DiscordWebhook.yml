@@ -1,0 +1,255 @@
+enact: 1.0.0
+id: DiscordWebhookSender
+description: Sends messages to a Discord channel using a webhook
+version: 1.0.0
+type: javascript
+authors:
+  - name: Enact Team
+    email: team@example.com
+inputs:
+  type: object
+  properties:
+    message:
+      type: object
+      description: Message object containing content and optional formatting
+      properties:
+        content:
+          type: string
+          description: The text content of the message
+          maxLength: 2000
+        username:
+          type: string
+          description: Override the default webhook username
+        avatarUrl:
+          type: string
+          description: Override the default webhook avatar
+          format: uri
+        embeds:
+          type: array
+          description: Rich embed objects to include in the message
+          items:
+            type: object
+            properties:
+              title:
+                type: string
+                description: Title of the embed
+              description:
+                type: string
+                description: Description content of the embed
+              url:
+                type: string
+                description: URL for the embed title to link to
+                format: uri
+              color:
+                type: integer
+                description: Color code of the embed (decimal value)
+              timestamp:
+                type: string
+                description: ISO8601 timestamp
+                format: date-time
+              footer:
+                type: object
+                properties:
+                  text:
+                    type: string
+                    description: Footer text
+                  icon_url:
+                    type: string
+                    description: URL of footer icon
+                    format: uri
+              thumbnail:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    description: URL of thumbnail image
+                    format: uri
+              image:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    description: URL of main image
+                    format: uri
+              author:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    description: Name of the author
+                  url:
+                    type: string
+                    description: URL of the author
+                    format: uri
+                  icon_url:
+                    type: string
+                    description: URL of author icon
+                    format: uri
+              fields:
+                type: array
+                description: Fields to add to the embed
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      description: Name of the field
+                    value:
+                      type: string
+                      description: Value of the field
+                    inline:
+                      type: boolean
+                      description: Whether the field should be displayed inline
+      oneOf:
+        - required: ["content"]
+        - required: ["embeds"]
+  required:
+    - message
+run: >
+  /**
+   * Sends a message to a Discord channel using a webhook
+   * @param {Object} inputs - The input parameters
+   * @param {Object} inputs.message - The message object containing content and formatting options
+   * @returns {object} Object containing the result of the operation
+   */
+  async function main(inputs) {
+    try {
+      // Get webhook URL from environment variable
+      const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+      
+      if (!webhookUrl) {
+        throw new Error("DISCORD_WEBHOOK_URL environment variable is required");
+      }
+      
+      // Extract message properties
+      const { message } = inputs;
+      
+      if (!message) {
+        throw new Error("Message object is required");
+      }
+      
+      const { content, username, avatarUrl, embeds } = message;
+      
+      if (!content && (!embeds || embeds.length === 0)) {
+        throw new Error("Either content or embeds must be provided in the message");
+      }
+      
+      if (content && content.length > 2000) {
+        throw new Error("Content must be 2000 characters or less");
+      }
+      
+      // Prepare the request payload
+      const payload = {};
+      
+      if (content) {
+        payload.content = content;
+      }
+      
+      if (username) {
+        payload.username = username;
+      }
+      
+      if (avatarUrl) {
+        payload.avatar_url = avatarUrl;
+      }
+      
+      if (embeds && embeds.length > 0) {
+        payload.embeds = embeds;
+        
+        // Validate that we don't exceed Discord's limits
+        if (embeds.length > 10) {
+          throw new Error("Discord allows a maximum of 10 embeds per message");
+        }
+        
+        // Calculate total characters in embeds to respect Discord's limits
+        let totalCharacters = 0;
+        for (const embed of embeds) {
+          // Count characters in title and description
+          totalCharacters += (embed.title?.length || 0) + (embed.description?.length || 0);
+          
+          // Count characters in fields
+          if (embed.fields) {
+            for (const field of embed.fields) {
+              totalCharacters += (field.name?.length || 0) + (field.value?.length || 0);
+            }
+          }
+        }
+        
+        if (totalCharacters > 6000) {
+          throw new Error("Total characters in all embeds must not exceed 6000");
+        }
+      }
+      
+      // Send the webhook request
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      // Discord returns 204 No Content on success
+      if (response.status === 204) {
+        return {
+          success: true,
+          message: "Message sent successfully"
+        };
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        return {
+          success: false,
+          statusCode: response.status,
+          error: {
+            message: errorData.message || "Failed to send message to Discord",
+            code: "DISCORD_API_ERROR",
+            details: errorData
+          }
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          message: error.message,
+          code: "EXECUTION_ERROR"
+        }
+      };
+    }
+  }
+outputs:
+  type: object
+  properties:
+    success:
+      type: boolean
+      description: Whether the operation was successful
+    message:
+      type: string
+      description: Success message (when successful)
+    statusCode:
+      type: integer
+      description: HTTP status code from Discord API (when unsuccessful)
+    error:
+      type: object
+      description: Error information (only present if an error occurred)
+      properties:
+        message:
+          type: string
+          description: Human-readable error message
+        code:
+          type: string
+          description: Error code
+        details:
+          type: object
+          description: Additional error details from Discord API
+  required:
+    - success
+env:
+  vars:
+    DISCORD_WEBHOOK_URL:
+      type: string
+      description: Discord webhook URL (required)
+      source: Create a webhook in your Discord server settings
+  resources:
+    memory: 128MB
+    timeout: 10s
