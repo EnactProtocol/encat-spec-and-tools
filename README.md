@@ -29,7 +29,7 @@ The Enact Protocol consists of several key components that work together:
 ```mermaid
 flowchart TB
     subgraph "AI System"
-        MCPClient[Tool Router]
+        MCPClient[MCP Client]
         MCPServer[Model Context Protocol Server]
     end
     
@@ -39,8 +39,7 @@ flowchart TB
         CapabilityStore[(Capability Store)]
     end
     
-    LLM --> ToolRouter
-    ToolRouter <--> MCPServer
+    MCPClient <--> MCPServer
     MCPServer <-->|search-capabilities| Registry
     MCPServer <-->|register-capability| Registry
     
