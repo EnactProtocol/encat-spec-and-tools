@@ -6,7 +6,7 @@ The **Enact Protocol (Enact)** provides a standardized framework for defining an
 
 ## Overview
 
-At its simplest, an Enact capability is a task with a structured description in YAML:
+At its simplest, an Enact capability is a tool with a structured description in YAML:
 
 ```yaml
 enact: 1.0.0
@@ -29,8 +29,7 @@ The Enact Protocol consists of several key components that work together:
 ```mermaid
 flowchart TB
     subgraph "AI System"
-        LLM[Large Language Model]
-        ToolRouter[Tool Router]
+        MCPClient[Tool Router]
         MCPServer[Model Context Protocol Server]
     end
     
