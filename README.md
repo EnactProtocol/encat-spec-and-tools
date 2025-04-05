@@ -248,6 +248,19 @@ env:
 
 All environment variables are treated as secrets by default and should be stored securely.
 
+#### Environment Variable Storage
+
+Enact uses a simple approach for storing environment variables in a configuration file, with cross-platform compatibility in mind.
+
+When a capability is executed, Enact will automatically load environment variables from this file and make them available to the capability. This provides a consistent location where capabilities can access their required environment variables.
+
+##### Location
+
+The configuration file is stored in a platform-specific default location:
+
+- **Linux/macOS**: `~/.enact/config`
+- **Windows**: `%USERPROFILE%\.enact\config`
+
 ### Error Handling
 
 It is recommended to handle errors using the standard `outputs` structure:

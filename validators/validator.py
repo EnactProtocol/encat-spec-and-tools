@@ -53,11 +53,11 @@ def validate_capability(capability: Dict[str, Any], schema: Dict[str, Any]) -> T
 
 
 def find_capabilities(directory: str) -> List[str]:
-    """Find all capability.yaml files in the given directory and subdirectories."""
+    """Find all YAML capability files in the given directory and subdirectories."""
     capability_files = []
     for root, _, files in os.walk(directory):
         for file in files:
-            if file == "capability.yaml":
+            if file.endswith(('.yaml', '.yml')):
                 capability_files.append(os.path.join(root, file))
     return capability_files
 
@@ -163,7 +163,7 @@ def main():
     """Main entry point for the script."""
     parser = argparse.ArgumentParser(
         description="Validate Enact capability files against the schema")
-    parser.add_argument("--schema", default="schema/enact-capability-schema.json",
+    parser.add_argument("--schema", default="schema/enact-schema.json",
                         help="Path to the Enact capability schema file")
     parser.add_argument("--capabilities", default="capabilities",
                         help="Directory containing capability files to validate")
