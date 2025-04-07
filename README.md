@@ -2,11 +2,11 @@
 
 ![Status: Alpha](https://img.shields.io/badge/Status-Alpha-yellow) ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg) [![Discord](https://img.shields.io/badge/Discord-Enact_PROTOCOL-blue?logo=discord&logoColor=white)](https://discord.gg/mMfxvMtHyS)
 
-The **Enact Protocol** provides a standardized framework for defining and executing tasks. It enables the creation of reusable, composable, and verifiable capabilities that can be discovered and executed by AI agents and other automated systems.
+The **Enact Protocol** provides a standardized framework for defining and executing tasks that can be seamlessly integrated with the Model Context Protocol (MCP). It enables the creation of reusable, composable, and verifiable tools that can be dynamically discovered and executed by AI agents and other automated systems.
 
 ## Overview
 
-At its simplest, an Enact capability is a tool with a structured description in YAML:
+At its simplest, an Enact tool is defined with a structured description in YAML:
 
 ```yaml
 enact: 1.0.0
@@ -20,11 +20,11 @@ run: |
     return {"message": "Hello World"}
 ```
 
-Enact addresses a critical need in the AI ecosystem: as AI agents become more capable, they require reliable access to a diverse set of reliable tools and capabilities. Enact provides a standardized protocol for defining, discovering, and executing tasks that AI agents can use at runtime. Think of it as a universal interface between AI agents and the tools they need to get things done.
+Enact addresses a critical need in the AI ecosystem: as AI agents become more capable, they require reliable access to a diverse set of tools and capabilities. Enact provides a standardized protocol for defining, discovering, and executing tasks that AI agents can use at runtime. Think of it as a universal registry and execution environment for AI tools, perfectly complementing MCP's tool integration capabilities.
 
 ## Architecture
 
-The Enact Protocol consists of several key components that work together:
+The Enact Protocol consists of several key components that work together with MCP:
 
 ```mermaid
 flowchart TB
@@ -34,18 +34,18 @@ flowchart TB
     end
     
     subgraph "Enact Ecosystem"
-        Registry[Capability Registry]
+        Registry[Tool Registry]
         ExecEnv[Execution Environment]
-        CapabilityStore[(Capability Store)]
+        ToolStore[(Tool Store)]
     end
     
     MCPClient <--> MCPServer
-    MCPServer <-->|search-capabilities| Registry
-    MCPServer <-->|register-capability| Registry
+    MCPServer <-->|search-tools| Registry
+    MCPServer <-->|register-tool| Registry
     
-    Registry <--> CapabilityStore
+    Registry <--> ToolStore
     
-    MCPServer -->|sends to| ExecEnv
+    MCPServer -->|executes| ExecEnv
     
     classDef ai fill:#6366F1,stroke:#312E81,stroke-width:1px,color:white
     classDef enact fill:#10B981,stroke:#065F46,stroke-width:1px,color:white
@@ -53,22 +53,23 @@ flowchart TB
     classDef data fill:#EC4899,stroke:#831843,stroke-width:1px,color:white
     
     class LLM,ToolRouter,MCPServer ai
-    class Registry,Capabilities,ExecEnv enact
+    class Registry,Tools,ExecEnv enact
     class APIs,Services,Data external
-    class CapabilityStore data
+    class ToolStore data
 ```
 
 ## Core Concepts
 
-### Capabilities
+### Tools
 
-Capabilities are the basic building blocks of the Enact Protocol. Each **capability** is defined in YAML that follows the Enact Protocol Schema.
+Enact tools are the basic building blocks of the Enact Protocol. Each **tool** is defined in YAML that follows the Enact Protocol Schema and can be seamlessly exposed as MCP tools.
+
 **Required Fields:**
 ```yaml
 enact: 1.0.0              # Protocol version
 id: string                # Unique identifier
-description: string       # What the capability does
-version: 1.0.0            # Capability version
+description: string       # What the tool does
+version: 1.0.0            # Tool version
 
 type: python|javascript|prompt|shell|workflow  # Execution environment
 authors:                  # List of authors (optional)
@@ -85,8 +86,7 @@ outputs:                  # Output parameters (JSON Schema)
   required: []            # Required property names
 ```
 
-
-**Example: Temperature Converter**
+**Example: Temperature Converter Tool**
 
 ```yaml
 enact: 1.0.0
@@ -126,7 +126,7 @@ Enact supports various execution environments specified directly in the `type` f
 - **`javascript`**: Execute JavaScript code
 - **`shell`**: Execute shell commands
 - **`prompt`**: Return a prompt template for LLMs
-- **`workflow`**: Chain multiple capabilities together
+- **`workflow`**: Chain multiple tools together
 
 ### Parameter Management with JSON Schema
 
@@ -160,7 +160,7 @@ Enact's parameter definitions are fully compliant with [JSON Schema](https://jso
 
 ### Dependencies
 
-Dependencies define the runtime requirements for executing a capability.
+Dependencies define the runtime requirements for executing a tool.
 
 ```yaml         
 dependencies:
@@ -222,7 +222,7 @@ outputs:
 
 ### Environment Variables
 
-Environment variables define the configuration and secrets required for capability execution.
+Environment variables define the configuration and secrets required for tool execution.
 
 ```yaml
 env:
@@ -252,7 +252,7 @@ All environment variables are treated as secrets by default and should be stored
 
 Enact uses a simple approach for storing environment variables in a configuration file, with cross-platform compatibility in mind.
 
-When a capability is executed, Enact will automatically load environment variables from this file and make them available to the capability. This provides a consistent location where capabilities can access their required environment variables.
+When a tool is executed, Enact will automatically load environment variables from this file and make them available to the tool. This provides a consistent location where tools can access their required environment variables.
 
 ##### Location
 
@@ -292,29 +292,29 @@ outputs:
 
 ## Schema Validation
 
-Capabilities can be validated against the Enact JSON Schema to ensure they conform to the protocol specification.
+Tools can be validated against the Enact JSON Schema to ensure they conform to the protocol specification.
 
 ## Using with Model Context Protocol (MCP)
 
-Enact capabilities can be dynamically discovered and executed through the Model Context Protocol, enabling AI agents to access the full range of capabilities in the Enact ecosystem.
+Enact tools can be dynamically discovered and executed through the Model Context Protocol, enabling AI agents to access the full range of tools in the Enact ecosystem.
 
 ### MCP Integration
 
 The Enact Protocol works with MCP through two primary mechanisms:
 
-1. **Dynamic Capability Discovery**: 
-   - The `enact-search-capabilities` MCP tool allows searching the Enact registry for capabilities that match specific criteria
-   - Found capabilities are automatically registered as MCP tools, making them immediately available for use
+1. **Dynamic Tool Discovery**: 
+   - The `enact-search-capabilities` MCP tool allows searching the Enact registry for tools that match specific criteria
+   - Found tools are automatically registered as MCP tools, making them immediately available for use
 
-2. **Direct Capability Execution**:
-   - The `execute-capability-by-id` MCP tool provides direct execution of any Enact capability using its ID
-   - This allows for execution of capabilities that may not be pre-registered as tools
+2. **Direct Tool Execution**:
+   - The `execute-capability-by-id` MCP tool provides direct execution of any Enact tool using its ID
+   - This allows for execution of tools that may not be pre-registered as MCP tools
 
 ```mermaid
 flowchart LR
     AI["AI Assistant"] <--> MCP["MCP Server"]
-    MCP <-->|"Search & Fetch Capabilities"| Registry["Enact Registry"]
-    MCP -->|"Execute Capabilities"| Execution["Code Execution"]
+    MCP <-->|"Search & Fetch Tools"| Registry["Enact Registry"]
+    MCP -->|"Execute Tools"| Execution["Code Execution"]
     
     classDef blue fill:#3b82f6,stroke:#1e40af,color:white
     classDef green fill:#10b981,stroke:#065f46,color:white
@@ -327,7 +327,7 @@ flowchart LR
 ```
 
 ## Contributing
-We welcome contributions to the Enact Protocol! You can start by making a pr or joining our [discord](https://discord.gg/mMfxvMtHyS)
+We welcome contributions to the Enact Protocol! You can start by making a PR or joining our [Discord](https://discord.gg/mMfxvMtHyS)
 
 > "Perfection is achieved not when there is nothing more to add, but when there is nothing left to take away."
 >
