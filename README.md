@@ -326,6 +326,24 @@ flowchart LR
     class Execution green
 ```
 
+## Security
+
+### Signatures
+
+Enact tools support cryptographic signatures to verify authenticity and integrity. When a tool is submitted to the registry, the registry reviews the document and signs it if it's valid. Clients can then verify this signature using the registry's public key before execution, ensuring the tool hasn't been tampered with.
+
+```yaml
+signature:
+  algorithm: sha256     # Hashing algorithm used
+  signer: developer-id  # Identifier of the registry
+  type: ecdsa-p256      # Signature algorithm and curve
+  created: 2025-04-27T06:34:31.810Z  # Timestamp of signature creation
+  value: MEUCIDWjMXPWhFS/1Ah3yLG4PyKrideWS/5viCLlbTb4XAC8AiEAyaT2OI1dsCryLry+RZSmvN3IYIDjfJQYM5IwS7Usgzs=  # Signature value
+```
+
+The signature is created by signing the canonical JSON representation of the Enact document with the registry's private key. This allows clients to verify the authenticity of tools before execution, preventing the execution of malicious code that might have been planted on the server.
+
+
 ## Contributing
 We welcome contributions to the Enact Protocol! You can start by making a PR or joining our [Discord](https://discord.gg/mMfxvMtHyS)
 
@@ -340,3 +358,8 @@ This project is licensed under the [MIT License](LICENSE).
 ---
 
 © 2025 Enact Protocol Contributors
+
+
+Thank you for the clarification! You're right - it's the registry that reviews and signs the documents, not the publisher. Let me correct that in the proposed addition:
+
+```markdown
