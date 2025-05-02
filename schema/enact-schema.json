@@ -296,6 +296,51 @@
                     }
                 }
             }
+        },
+        "signature": {
+            "type": "object",
+            "description": "Cryptographic signature to verify authenticity and integrity",
+            "required": [
+                "algorithm",
+                "signer",
+                "type",
+                "created",
+                "value"
+            ],
+            "properties": {
+                "algorithm": {
+                    "type": "string",
+                    "description": "Hashing algorithm used",
+                    "enum": [
+                        "sha256",
+                        "sha384",
+                        "sha512"
+                    ]
+                },
+                "signer": {
+                    "type": "string",
+                    "description": "Identifier of the registry that signed the document"
+                },
+                "type": {
+                    "type": "string",
+                    "description": "Signature algorithm and curve",
+                    "enum": [
+                        "ecdsa-p256",
+                        "ecdsa-p384",
+                        "ecdsa-p521",
+                        "ed25519"
+                    ]
+                },
+                "created": {
+                    "type": "string",
+                    "description": "Timestamp of signature creation",
+                    "format": "date-time"
+                },
+                "value": {
+                    "type": "string",
+                    "description": "Base64-encoded signature value"
+                }
+            }
         }
     },
     "patternProperties": {
