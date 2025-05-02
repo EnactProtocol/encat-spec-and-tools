@@ -358,8 +358,3 @@ This project is licensed under the [MIT License](LICENSE).
 ---
 
 © 2025 Enact Protocol Contributors
-
-
-Thank you for the clarification! You're right - it's the registry that reviews and signs the documents, not the publisher. Let me correct that in the proposed addition:
-
-```markdown
