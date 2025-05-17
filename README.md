@@ -20,7 +20,7 @@ With Enact, a tool definition is enhanced with the necessary metadata for its en
 enact: 0.0.1         # Enact Protocol version
 name: HelloWorldTool
 description: A discoverable, versioned, and securely executable Hello World example.
-type: "npx"          # Defines execution type (e.g., npx, mcp, docker, wasm, http)
+type: "npx"          # Defines execution type (e.g., npx, mcp, uvx, cargo)
 source: "my-hello-world-npx-package" # The resolvable source of the tool
 version: "1.0.0"     # Semantic version of the tool itself
 inputSchema:
@@ -106,7 +106,7 @@ Enact tools are the basic building blocks of the Enact Protocol. Each **tool** i
 enact: 0.0.1         # Version of the Enact Protocol schema being used
 name: string         # Unique identifier for the tool
 description: string  # Human-readable description
-type: string         # Execution type (npx, mcp, docker, wasm, http)
+type: string         # Execution type (npx, mcp, uvx)
 source: string       # Package, server, or resource
 
 inputSchema:         # Input parameters (JSON Schema)

@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "Enact Protocol Schema",
-    "description": "Schema for validating Enact capability YAML files",
+    "description": "Schema for validating Enact tool YAML files",
     "definitions": {
         "jsonSchema": {
             "type": "object",
@@ -104,15 +104,42 @@
                     "description": "Source or instructions for obtaining the value"
                 }
             }
+        },
+        "annotationType": {
+            "type": "object",
+            "description": "MCP-aligned annotations for tool behavior",
+            "properties": {
+                "title": {
+                    "type": "string",
+                    "description": "Human-friendly display name for the tool"
+                },
+                "readOnlyHint": {
+                    "type": "boolean",
+                    "description": "Indicates if the tool only reads data without side effects"
+                },
+                "destructiveHint": {
+                    "type": "boolean",
+                    "description": "Indicates if the tool might make irreversible changes"
+                },
+                "idempotentHint": {
+                    "type": "boolean",
+                    "description": "Indicates if calling the tool multiple times with the same input has the same effect as calling it once"
+                },
+                "openWorldHint": {
+                    "type": "boolean",
+                    "description": "Indicates if the tool interacts with a dynamic external environment"
+                }
+            }
         }
     },
     "type": "object",
     "required": [
         "enact",
-        "id",
+        "name",
         "description",
-        "version",
-        "type"
+        "type",
+        "source",
+        "inputSchema"
     ],
     "properties": {
         "enact": {
@@ -120,227 +147,129 @@
             "description": "Enact Protocol version",
             "pattern": "^\\d+\\.\\d+\\.\\d+$"
         },
-        "id": {
+        "name": {
             "type": "string",
-            "description": "Unique identifier for the capability"
+            "description": "Unique identifier for the tool"
         },
         "description": {
             "type": "string",
-            "description": "Description of the capability"
+            "description": "Human-readable description of the tool"
         },
         "version": {
             "type": "string",
-            "description": "Version of the capability",
+            "description": "Semantic version of the tool itself",
             "pattern": "^\\d+\\.\\d+\\.\\d+$"
         },
         "type": {
             "type": "string",
-            "description": "Type of capability",
+            "description": "Execution type that defines how the tool is executed",
             "enum": [
-                "python",
-                "javascript",
-                "shell",
-                "prompt",
-                "workflow"
+                "npx",
+                "mcp",
+                "docker",
+                "wasm",
+                "http"
             ]
         },
-        "authors": {
-            "type": "array",
-            "description": "List of authors",
-            "items": {
-                "type": "object",
-                "required": [
-                    "name"
-                ],
-                "properties": {
-                    "name": {
-                        "type": "string",
-                        "description": "Author's name"
-                    },
-                    "email": {
-                        "type": "string",
-                        "description": "Author's email address",
-                        "format": "email"
-                    },
-                    "url": {
-                        "type": "string",
-                        "description": "Author's URL",
-                        "format": "uri"
-                    }
-                }
-            }
-        },
-        "doc": {
+        "source": {
             "type": "string",
-            "description": "Optional documentation in Markdown format"
+            "description": "Identifier for the tool's executable code or endpoint"
         },
-        "inputs": {
-            "type": "object",
-            "description": "Input parameters for the capability (JSON Schema)",
-            "properties": {
-                "type": {
-                    "type": "string",
-                    "description": "Type of the inputs object",
-                    "enum": [
-                        "object"
-                    ]
-                },
-                "properties": {
-                    "type": "object",
-                    "description": "JSON Schema properties defining the inputs"
-                },
-                "required": {
-                    "type": "array",
-                    "description": "Array of required property names",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            },
-            "default": {
-                "type": "object",
-                "properties": {},
-                "required": []
-            }
+        "commit": {
+            "type": "string",
+            "description": "Specific commit hash for version pinning"
         },
-        "dependencies": {
-            "type": "object",
-            "description": "Runtime dependencies for the capability",
-            "properties": {
-                "packages": {
-                    "type": "array",
-                    "description": "Required packages",
-                    "items": {
-                        "type": "string",
-                        "description": "Package name with optional version specifier (e.g., 'pandas>=2.0.0')"
-                    }
-                }
-            }
+        "inputSchema": {
+            "$ref": "#/definitions/jsonSchema",
+            "description": "Input parameters for the tool (JSON Schema)"
+        },
+        "outputSchema": {
+            "$ref": "#/definitions/jsonSchema",
+            "description": "Output parameters for the tool (JSON Schema)"
         },
         "run": {
-            "description": "Implementation code or workflow steps",
-            "oneOf": [
-                {
-                    "type": "string",
-                    "description": "Implementation code for atomic capabilities"
-                },
-                {
-                    "type": "array",
-                    "description": "Workflow steps for workflow capabilities",
-                    "items": {
-                        "type": "object",
-                        "additionalProperties": {
-                            "type": "object",
-                            "description": "Parameters to pass to the capability"
-                        }
-                    }
-                }
-            ]
-        },
-        "outputs": {
             "type": "object",
-            "description": "Output parameters for the capability (JSON Schema)",
+            "description": "Execution configuration",
             "properties": {
-                "type": {
-                    "type": "string",
-                    "description": "Type of the outputs object",
-                    "enum": [
-                        "object"
-                    ]
-                },
-                "properties": {
-                    "type": "object",
-                    "description": "JSON Schema properties defining the outputs"
-                },
-                "required": {
+                "args": {
                     "type": "array",
-                    "description": "Array of required property names",
+                    "description": "Command arguments for NPX or Docker execution types",
                     "items": {
                         "type": "string"
                     }
                 },
-                "oneOf": {
-                    "type": "array",
-                    "description": "JSON Schema oneOf for complex validation patterns"
+                "tool": {
+                    "type": "string",
+                    "description": "Target tool name for MCP execution type"
+                },
+                "method": {
+                    "type": "string",
+                    "description": "HTTP method for HTTP execution type",
+                    "enum": [
+                        "GET",
+                        "POST",
+                        "PUT",
+                        "DELETE",
+                        "PATCH"
+                    ]
+                },
+                "urlTemplate": {
+                    "type": "string",
+                    "description": "URL template for HTTP execution type"
+                },
+                "headers": {
+                    "type": "object",
+                    "description": "HTTP headers for HTTP execution type"
+                },
+                "bodyTemplate": {
+                    "type": "object",
+                    "description": "Request body template for HTTP execution type"
+                },
+                "timeout": {
+                    "type": "number",
+                    "description": "Maximum execution time in milliseconds"
                 }
             },
-            "default": {
-                "type": "object",
-                "properties": {},
-                "required": []
-            }
-        },
-        "env": {
-            "type": "object",
-            "description": "Environment configuration and resource requirements",
-            "properties": {
-                "vars": {
-                    "type": "object",
-                    "description": "Environment variables (treated as secrets by default)",
-                    "additionalProperties": {
-                        "$ref": "#/definitions/jsonSchemaType"
-                    }
+            "oneOf": [
+                {
+                    "required": [
+                        "args"
+                    ]
                 },
-                "resources": {
-                    "type": "object",
-                    "description": "Resource requirements for execution",
-                    "properties": {
-                        "memory": {
-                            "type": "string",
-                            "description": "Required memory allocation"
-                        },
-                        "timeout": {
-                            "type": "string",
-                            "description": "Maximum execution time"
-                        }
-                    }
+                {
+                    "required": [
+                        "tool"
+                    ]
+                },
+                {
+                    "required": [
+                        "method",
+                        "urlTemplate"
+                    ]
                 }
-            }
+            ]
         },
         "signature": {
             "type": "object",
             "description": "Cryptographic signature to verify authenticity and integrity",
             "required": [
-                "algorithm",
-                "signer",
-                "type",
-                "created",
-                "value"
+                "value",
+                "signer"
             ],
             "properties": {
-                "algorithm": {
+                "value": {
                     "type": "string",
-                    "description": "Hashing algorithm used",
-                    "enum": [
-                        "sha256",
-                        "sha384",
-                        "sha512"
-                    ]
+                    "description": "Cryptographic signature of the canonical tool definition"
                 },
                 "signer": {
                     "type": "string",
-                    "description": "Identifier of the registry that signed the document"
-                },
-                "type": {
-                    "type": "string",
-                    "description": "Signature algorithm and curve",
-                    "enum": [
-                        "ecdsa-p256",
-                        "ecdsa-p384",
-                        "ecdsa-p521",
-                        "ed25519"
-                    ]
-                },
-                "created": {
-                    "type": "string",
-                    "description": "Timestamp of signature creation",
-                    "format": "date-time"
-                },
-                "value": {
-                    "type": "string",
-                    "description": "Base64-encoded signature value"
+                    "description": "Identifier of the key or entity that signed the tool"
                 }
             }
+        },
+        "annotations": {
+            "$ref": "#/definitions/annotationType",
+            "description": "MCP-aligned annotations providing hints to AI agents"
         }
     },
     "patternProperties": {
