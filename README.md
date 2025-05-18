@@ -312,7 +312,8 @@ Execute by tool name via `execute-capability-by-name`.
 
 ## 🎯 Why Use Enact?
 
-✅ **Standardization** — Tools are defined consistently  
+✅ **Standardization** — Tools are defined consistently
+
 🔍 **Discoverability** — Semantic search for capabilities
 
 🔐 **Security** — Signatures, sandboxing, commit pinning
