@@ -37,7 +37,19 @@ While MCP focuses on tool **communication**, Enact focuses on tool **management*
 
 ### 🔧 Tool Definition
 
-Enact tools are defined in YAML using a simple schema:
+At its simplest, an Enact tool can be defined in just a few lines:
+
+```yaml
+enact: 0.0.1
+name: HelloWorld
+description: A simple Hello World example
+type: npx
+source: hello-world-npx
+config:
+  args: ["--text={{text}}"]
+```
+
+For more complex tools, additional fields provide richer functionality:
 
 ```yaml
 enact: 0.0.1
@@ -114,6 +126,7 @@ name: WordCounter
 description: "Count words in text"
 type: npx
 source: word-counter-tool # example npm package
+version: "1.2.0"
 commit: "abc123def456789" # Optional specific commit hash from its repository
 inputSchema:
   type: object
@@ -127,8 +140,9 @@ config:
 annotations:
   title: "Word Counter"
   readOnlyHint: true
-  idempotentHint: true```
+  idempotentHint: true
 ```
+
 ### Example: MCP Tool
 
 ```yaml
@@ -146,8 +160,9 @@ inputSchema:
       description: "Message to echo back"
   required: ["message"]
 config:
+  command: "npx"
+  args: [] # "-y", "@modelcontextprotocol/server-brave-search" are implicit.
   tool: "echoOnRemoteServer" # The specific tool name on the source MCP server
-
 ```
 
 **MCP Tool Example (Advanced):**
@@ -157,6 +172,7 @@ name: BraveSearch
 description: "Search the web using Brave Search API"
 type: "mcp"
 source: "@modelcontextprotocol/server-brave-search" # Identifier for the target MCP server/service
+version: "1.0.0"
 inputSchema:
   type: object
   properties:
@@ -166,7 +182,7 @@ inputSchema:
   required: ["query"]
 config:
   command: "npx"
-  args: ["-y", "@modelcontextprotocol/server-brave-search"]
+  args: [] # "-y", "@modelcontextprotocol/server-brave-search" are implicit.
   env:
     BRAVE_API_KEY: "<PUT YOUR BRAVE API KEY>"
   timeout: 10000 # 10 seconds timeout
@@ -296,12 +312,16 @@ Execute by tool name via `execute-capability-by-name`.
 
 ## 🎯 Why Use Enact?
 
-✅ **Standardization** — Tools are defined consistently
+✅ **Standardization** — Tools are defined consistently  
 🔍 **Discoverability** — Semantic search for capabilities
+
 🔐 **Security** — Signatures, sandboxing, commit pinning
+
 📦 **Packaging** — Versioning and lifecycle control
+
 🌐 **Portability** — Works across platforms and runtimes
-⚙️ **Dev Tooling** — Easy to publish, manage, and integrate
+  
+⚙️ **Dev Tooling** — Easy to publish, manage, and integrate  
 
 ---
 
