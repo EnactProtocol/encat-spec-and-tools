@@ -114,7 +114,6 @@ name: WordCounter
 description: "Count words in text"
 type: npx
 source: word-counter-tool # example npm package
-version: "1.2.0"
 commit: "abc123def456789" # Optional specific commit hash from its repository
 inputSchema:
   type: object
@@ -158,7 +157,6 @@ name: BraveSearch
 description: "Search the web using Brave Search API"
 type: "mcp"
 source: "@modelcontextprotocol/server-brave-search" # Identifier for the target MCP server/service
-version: "1.0.0"
 inputSchema:
   type: object
   properties:
@@ -275,35 +273,24 @@ config:
 
 ---
 
-## 🤖 MCP Integration
+## 🤖 Enact MCP
 
 ### Dynamic Discovery
 
-AI agents can discover tools using semantic search via tools like `enact-search-tools`.
+AI agents can discover tools using semantic search via tools like `enact-search-tools`, `enact-search-and-register-tools`, etc.
+
+### MCP Tools
+
+Enact tools can be registered as MCP tools at runtime for future execution.
+
+### Context
+
+Enact allows you to switch context for fresh slate when utilizing tools for a task.
 
 ### Direct Execution
 
 Execute by tool name via `execute-capability-by-name`.
 
-
-```mermaid
-flowchart LR
-    AI["AI Assistant"] <--> MCPServer["MCP Server (Enact-Aware)"]
-    MCPServer <-->|"1. Search Tools (Semantic)"| Registry["Enact Registry"]
-    MCPServer -->|"2. Fetch Tool Definition"| Registry
-    MCPServer -->|"3. Execute Tool via Enact"| Execution["Enact Execution Env"]
-    Execution -->|"Tool Output"| MCPServer
-    MCPServer -->|"Result"| AI
-
-    classDef blue fill:#3b82f6,stroke:#1e40af,color:white
-    classDef green fill:#10b981,stroke:#065f46,color:white
-    classDef purple fill:#8b5cf6,stroke:#5b21b6,color:white
-
-    class AI blue
-    class MCPServer green
-    class Registry purple
-    class Execution green
-```
 
 ---
 
