@@ -14,7 +14,7 @@ Where MCP enables communication between AI models and tools, **Enact handles the
 * 🕒 **Reproducible** — thanks to versioning and commit pinning
 * ⚙️ **Configurable** — through standardized environment definitions
 
-> Think of Enact as the registry, runtime, and security layer for MCP tools.
+> Enact provides the standards for packaging, securing, and discovering MCP tools
 
 ---
 
