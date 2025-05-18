@@ -20,6 +20,24 @@ Where MCP enables communication between AI models and tools, **Enact handles the
 
 ## 🧠 How Enact Complements MCP
 
+MCP [tools](https://modelcontextprotocol.io/docs/concepts/tools) are described in this format:
+
+```yml
+name: string          # Unique identifier for the tool
+description: string   # Human-readable description (optional)
+inputSchema:
+  type: object
+  properties: {}      # Tool-specific parameters
+annotations:          # Optional hints about tool behavior
+  title: string       # Human-readable title for the tool (optional)
+  readOnlyHint: boolean       # If true, the tool does not modify its environment
+  destructiveHint: boolean    # If true, the tool may perform destructive updates
+  idempotentHint: boolean     # If true, repeated calls with same args have no additional effect
+  openWorldHint: boolean      # If true, tool interacts with external entities
+```
+
+Enact extends this to add additional fields to promote discovery, congiurability, and security.
+
 While MCP focuses on tool **communication**, Enact focuses on tool **management**:
 
 | Capability                   | MCP                   | Enact                     |
@@ -29,7 +47,7 @@ While MCP focuses on tool **communication**, Enact focuses on tool **management*
 | Tool Packaging               | ❌                     | ✅ Standard YAML schema    |
 | Versioning & Reproducibility | ❌                     | ✅ Semantic & commit-based |
 | Security & Timeouts          | ❌                     | ✅ Signatures, limits      |
-| Environment Management       | ❌                     | ✅ Global + tool-level     |
+| Environment Management       | ❌                     | ✅ Secure/User Friendly     |
 
 ---
 
@@ -194,7 +212,6 @@ annotations:
 
 ---
 
-## 📚 Schema Highlights
 
 ### Input & Output Parameters
 
@@ -279,7 +296,7 @@ config:
     API_KEY: "{{api_key}}"
 ```
 
-### Global (per machine)
+### Global (WIP)
 
 ```yaml
 # ~/.enact/env.yaml
@@ -290,6 +307,8 @@ config:
 ---
 
 ## 🤖 Enact MCP
+
+The enact MCP is currently under development here: (https://github.com/EnactProtocol/enact-mcp)
 
 ### Dynamic Discovery
 
