@@ -129,7 +129,7 @@ annotations:
   title: "Word Counter"
   readOnlyHint: true
   idempotentHint: true```
-
+```
 ### Example: MCP Tool
 
 ```yaml
