@@ -169,9 +169,7 @@ doc: |
   This tool processes images to identify objects, scenes, and content.
   
   ## Usage Example
-  ```json
   { "imageUrl": "https://example.com/image.jpg" }
-  ```
 authors:
   - name: "AI Tools Team"
     email: "team@example.com"
