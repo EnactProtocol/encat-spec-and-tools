@@ -4,25 +4,24 @@
 
 ## What is Enact?
 
-**Enact** revolutionizes how tools are defined, packaged, and shared.
+**Enact** revolutionizes how AI tools are defined, packaged, and shared.
 
-is a protocol that complements the [Model Context Protocol (MCP)](https://github.com/modelcontextprotocol) by providing a standardized way to define, package, discover, secure, and manage AI tools.
+Enact is a protocol that complements the [Model Context Protocol (MCP)](https://github.com/modelcontextprotocol) by providing a standardized way to define, package, discover, and secure AI tools.
 
 While MCP enables communication between AI models and tools, **Enact handles the complete lifecycle of those tools**—ensuring they are:
 
 * 🌐 **Discoverable** — semantically searchable across registries
 * 📦 **Packaged** — defined in a consistent, executable format
-* 🔐 **Secure** — protected with cryptographic signatures and sandboxing
+* 🔐 **Secure** — protected with cryptographic signatures
 * 🕒 **Reproducible** — versioned with commit pinning for reliability
-* ⚙️ **Configurable** — managed through standardized environment definitions
 
-> **Enact provides the standards for packaging, securing, and discovering MCP tools**
+> **Enact provides the standards for packaging, securing, and discovering tools**
 
 ---
 
 ## 🧠 How Enact Extends MCP
 
-MCP defines [tools](https://modelcontextprotocol.io/docs/concepts/tools) with a basic structure:
+MCP defines [tools](https://modelcontextprotocol.io/docs/concepts/tools) with a basic structure, but doesn't address the complete tool lifecycle. Enact fills this gap:
 
 ```yaml
 name: string          # Unique identifier for the tool
@@ -42,12 +41,11 @@ annotations:          # Optional hints about tool behavior
 
 | Capability                   | MCP                   | Enact                     |
 | ---------------------------- | --------------------- | ------------------------- |
-| Communication Protocol       | ✅ Defines interaction | ❌                         |
+| Communication Protocol       | ✅ Defines interaction | ❌ Uses MCP                |
 | Tool Discovery               | ❌                     | ✅ Semantic search         |
 | Tool Packaging               | ❌                     | ✅ Standard YAML schema    |
 | Versioning & Reproducibility | ❌                     | ✅ Semantic & commit-based |
 | Security & Execution Limits  | ❌                     | ✅ Signatures, timeouts    |
-| Environment Management       | ❌                     | ✅ Secure, user-friendly   |
 
 ---
 
@@ -55,7 +53,7 @@ annotations:          # Optional hints about tool behavior
 
 ### 🔧 Tool Definition
 
-Enact tools are defined using a simple /JSON schema.
+Enact tools are defined using a simple YAML schema:
 
 ```yaml
 enact: 0.0.1
@@ -63,11 +61,11 @@ name: HelloWorld
 description: A simple Hello World example
 type: npx
 source: hello-world-npx
-config:
+run:
   args: ["--text={{text}}"]
 ```
 
-For more complex  tools, additional fields provide essential functionality:
+For more complex tools, additional fields provide essential functionality:
 
 ```yaml
 enact: 0.0.1
@@ -83,21 +81,19 @@ inputSchema:
       type: string
       description: "Text to analyze"
   required: ["text"]
-config:
+run:
   args: ["--text={{text}}"]
   timeout: 30000
 ```
 
-### 🛠 Tool Types
+### 🚀 Simplified Execution Model
 
-Enact supports multiple execution environments:
+Enact uses NPM packages (via NPX) as its universal execution environment. This approach offers several advantages:
 
-| Type            | Description                             |
-| --------------- | --------------------------------------- |
-| `npx`           | Execute npm packages via npx           |
-| `mcp`           | Proxy to existing MCP servers          |
-| `uvx` / `cargo` | Python/Rust package execution (planned) |
-| `js`            | Run simple scripts (more languages coming) |
+- **Simplified Configuration**: One consistent way to define and execute tools
+- **Automatic Dependency Management**: NPX handles package installation automatically
+- **Universal Compatibility**: Works on any system with Node.js installed
+- **Flexible Implementation**: NPX packages can invoke any technology (Python, Rust, APIs, MCPs, etc.)
 
 ---
 
@@ -112,7 +108,6 @@ flowchart TB
     MCPClient --> MCPServer["Enact-aware MCP Server"]
     MCPServer --> Registry
     MCPServer --> ExecEnv["Execution Environment"]
-
     classDef ai fill:#6366F1,color:white
     classDef enact fill:#10B981,color:white
     classDef dev fill:#7C3AED,color:white
@@ -127,15 +122,13 @@ flowchart TB
 * **Enact CLI**: Developer tool for publishing and managing tools
 * **Registry**: Centralized store for tool definitions (e.g., [enact.tools](https://enact.tools))
 * **Enact-aware MCP Server**: Implements the protocol for discovery and execution orchestration
-* **Execution Environment**: Sandboxed runtime where tools actually execute
+* **NPX Execution**: Universal runtime for tool execution
 
 ---
 
 ## 🧪 Tool Examples
 
-### NPX Tool
-
-Execute Node.js packages with automatic dependency management:
+### Basic Tool
 
 ```yaml
 enact: 0.0.1
@@ -152,7 +145,7 @@ inputSchema:
       type: string
       description: "Text to analyze"
   required: ["text"]
-config:
+run:
   args: ["--text={{text}}"]
   timeout: 30000
 annotations:
@@ -161,36 +154,41 @@ annotations:
   idempotentHint: true
 ```
 
-### MCP Proxy Tool
-
-Wrap existing MCP servers for enhanced management:
+### Tool with Documentation and Authors
 
 ```yaml
 enact: 0.0.1
-name: BraveSearch
-description: "Search the web using Brave Search API"
-type: mcp
-source: "@modelcontextprotocol/server-brave-search"
+name: ImageAnalyzer
+description: "Analyzes images for objects and scenes"
+type: npx
+source: image-analyzer-tool
 version: "1.0.0"
+doc: |
+  # Image Analyzer
+  
+  This tool processes images to identify objects, scenes, and content.
+  
+  ## Usage Example
+  ```json
+  { "imageUrl": "https://example.com/image.jpg" }
+  ```
+authors:
+  - name: "AI Tools Team"
+    email: "team@example.com"
 inputSchema:
   type: object
   properties:
-    query:
+    imageUrl:
       type: string
-      description: "Search query"
-  required: ["query"]
-config:
-  command: "npx"
-  args: ["-y", "@modelcontextprotocol/server-brave-search"]
-  env:
-    BRAVE_API_KEY: "{{BRAVE_API_KEY}}"
+      format: "uri"
+      description: "URL of the image to analyze"
+  required: ["imageUrl"]
 run:
-  timeout: 10000
-
-annotations:
-  title: "Brave Search"
-  readOnlyHint: true
-  openWorldHint: true
+  args: ["--image={{imageUrl}}"]
+  timeout: 60000
+env:
+  vars:
+    VISION_API_KEY: "{{api_key}}"
 ```
 
 ---
@@ -252,7 +250,7 @@ commit: "abc123def456"
 
 Prevent runaway executions:
 ```yaml
-config:
+run:
   timeout: 30000  # 30 seconds maximum execution time
 ```
 
@@ -262,34 +260,24 @@ Verify tool authenticity and integrity:
 
 ```yaml
 signature:
-  value: "MEUCI..."
-  signer: "registry-id"
+  algorithm: "sha256"
+  signer: "developer-id"
+  type: "ecdsa-p256"
+  created: "2025-04-27T06:34:31.810Z"
+  value: "MEUCIDWjMXPWhFS/1Ah3yLG4PyKrideWS/5viCLlbTb4XAC8AiEAyaT2OI1dsCryLry+RZSmvN3IYIDjfJQYM5IwS7Usgzs="
 ```
 
 ---
 
-## 🌍 Environment Management
-
-### Tool-Specific Configuration
+## 🌍 Environment Variables
 
 Define environment variables directly in the tool manifest:
 
 ```yaml
-config:
-  env:
+env:
+  vars:
     API_KEY: "{{api_key}}"
     MAX_RETRIES: "3"
-```
-
-### Global Environment (Planned)
-
-System-wide configuration for common settings:
-
-```yaml
-# ~/.enact/env.yaml
-"word-counter-tool":
-  DEFAULT_LANGUAGE: "en"
-  CACHE_ENABLED: "true"
 ```
 
 ---
@@ -316,7 +304,6 @@ Switch execution contexts for isolated tool sessions and clean state management.
 ### Direct Execution
 
 Execute by tool name via `execute-capability-by-name`.
-
 ---
 
 ## 🎯 Why Choose Enact?
@@ -329,12 +316,12 @@ Execute by tool name via `execute-capability-by-name`.
 **For AI Application Builders:**
 - **Semantic search** simplifies tool integration
 - **Version management** ensures reliable deployments
-- **Sandboxed execution** provides safe AI tool usage
+- **Consistent interface** for all tools
 
 **For Enterprise:**
 - **Cryptographic verification** ensures tool integrity
 - **Audit trails** track tool usage and versions
-- **Environment isolation** protects sensitive systems
+- **Security controls** protect sensitive systems
 
 ---
 
@@ -392,112 +379,96 @@ We welcome contributions from the community!
 - 🐛 **Report issues** and suggest improvements
 - 💬 **Join discussions** on [Discord](https://discord.gg/mMfxvMtHyS)
 
+---
 
 ## 📋 Roadmap
 
 **Current (Alpha)**
 - ✅ Core protocol specification
-- ✅ NPX and MCP tool types
-- ✅ Basic MCP server implementation
+- ✅ NPX tool type
+- ✅ Basic MCP server integration
 
 **Next (Beta)**
 - 🔄 Enhanced security model
-- 🔄 Tool dependency management
 - 🔄 Advanced environment configuration
 - 🔄 Performance optimizations
+- 🔄 Expanded tool registry
 
 **Future**
-- ⏳ Additional runtime types (Python, Rust, Go)
 - ⏳ Federated registry support
 - ⏳ Tool composition and workflows
 - ⏳ Enterprise features (RBAC, audit logs)
 
-
+---
 
 ## All Fields Reference
 
-### Required Fields
-```yaml
-enact: 0.0.1         # Version of the Enact Protocol schema being used
-name: string         # Unique identifier for the tool
-description: string  # Human-readable description
-type: string         # Execution type (npx, mcp, js)
-source: string       # Package name, server URL, or script source
-```
+### Core Fields
 
-### Common Optional Fields
 ```yaml
-version: string      # Semantic version of the tool
+# Required fields
+enact: 0.0.1         # Protocol version (required)
+name: string         # Tool identifier (required)
+description: string  # Human-readable description (required)
+type: npx            # Execution type, only npx supported (required)
+source: string       # NPM package name (required)
+inputSchema: object  # Input parameters as JSON Schema (required)
+
+# Common optional fields
+version: string      # Semantic version (format: ^\\d+\\.\\d+\\.\\d+$)
 commit: string       # Specific commit hash for reproducibility
-inputSchema:         # JSON Schema for input validation
-  type: object
-  properties: {}     # Tool-specific parameters
-  required: []       # Required property names
-outputSchema:        # JSON Schema for output validation
-  type: object
-  properties: {}     # Expected output structure
-  required: []       # Required output fields
-annotations:         # MCP-aligned metadata
-  title: string      # Human-readable title
-  readOnlyHint: boolean       # If true, does not modify environment
-  destructiveHint: boolean    # If true, may perform destructive updates
-  idempotentHint: boolean     # If true, repeated calls with same args have same effect
-  openWorldHint: boolean      # If true, interacts with external entities
+outputSchema: object # Output structure as JSON Schema
 ```
 
-### Configuration Fields
+### Execution Configuration
+
 ```yaml
-config:              # Execution configuration
-  args: [string]     # Command line arguments with template variables (e.g. ["--text={{text}}"])
-  command: string    # Execution command override (e.g., "npx")
-  timeout: number    # Maximum execution time in milliseconds
-  env:               # Environment variables for the mcp
-    ENV_NAME: string # Can use template syntax (e.g. "{{api_key}}")
+run:
+  args: [string]     # Command line arguments with template variables (required)
+  timeout: number    # Maximum execution time in milliseconds (optional)
 ```
 
-### Security Fields
+### Documentation
+
 ```yaml
-signature:                  # Cryptographic verification
-  algorithm: string         # Hashing algorithm used (e.g., "sha256")
-  signer: string            # Identifier of the registry or developer
-  type: string              # Signature algorithm and curve (e.g., "ecdsa-p256")
-  created: string           # ISO timestamp of signature creation
-  value: string             # Signature value itself
+doc: string          # Markdown documentation
+authors:             # Tool creators
+  - name: string     # Author name (required)
+    email: string    # Author email (optional)
+    url: string      # Author website (optional)
 ```
-### Environmental Fields
+
+### Environment Variables
+
 ```yaml
-  env:                      # For execution environment
-    vars:                   # Vars used for this tool (for MCP these can be mapped to MCP vars)
+env:
+  vars:              # Environment variables (secrets by default)
+    KEY: string      # Can use templates (e.g., "{{api_key}}")
 ```
 
-### Type-Specific Fields
+### Metadata and Security
 
-#### For NPX Tools
 ```yaml
-# Additional NPX-specific fields
-config:
-  args: [string]     # CLI arguments passed to the NPX package
+annotations:         # MCP-aligned behavior hints
+  title: string      # Human-readable display name
+  readOnlyHint: boolean      # No environment modifications
+  destructiveHint: boolean   # May make irreversible changes
+  idempotentHint: boolean    # Multiple calls = single call
+  openWorldHint: boolean     # Interacts with external systems
+
+signature:           # Cryptographic verification
+  algorithm: string  # Hash algorithm (e.g., "sha256")
+  signer: string     # Registry or developer ID (required)
+  type: string       # Signature algorithm (e.g., "ecdsa-p256")
+  created: string    # ISO timestamp
+  value: string      # Signature value (required)
 ```
 
-#### For MCP Proxy Tools
+### Extensions
+
 ```yaml
-# Additional MCP-specific fields
-config:
-  command: string    # Command to start MCP server
-  args: [string]     # Arguments to pass to MCP server startup
+x-*: any             # Custom extensions (must begin with 'x-')
 ```
-
-#### For JS Tools
-```yaml
-run: |
-  function main(name = "World") {
-    const greeting = `Hello, ${name}!`;
-    console.log(greeting);
-  }
-```
-
-
-
 
 ---
 
