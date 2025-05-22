@@ -470,17 +470,21 @@ signature:           # Cryptographic verification
 x-*: any             # Custom extensions (must begin with 'x-')
 ```
 
----
 
-## 📄 License
-
-This project is licensed under the [MIT License](LICENSE).
 
 ---
 
 *"Perfection is achieved not when there is nothing more to add, but when there is nothing left to take away."*
 
  — *Antoine de Saint-Exupéry*
+
+
+---
+
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).
 
 
 © 2025 Enact Protocol Contributors
