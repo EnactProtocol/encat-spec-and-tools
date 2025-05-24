@@ -142,7 +142,7 @@ signature:
 MCP defines [tools](https://modelcontextprotocol.io/docs/concepts/tools) with a basic structure, but doesn't address the complete tool lifecycle. Enact fills this gap:
 
 **MCP Tool Definition:**
-```json
+```
 {
   "name": "string",          // Unique identifier for the tool
   "description": "string",   // Human-readable description (optional)
