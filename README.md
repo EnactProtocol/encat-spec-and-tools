@@ -1,4 +1,4 @@
-# Enact Protocol
+ # Enact Protocol
 
 ![Status: Alpha](https://img.shields.io/badge/Status-Alpha-yellow) ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg) [![Discord](https://img.shields.io/badge/Discord-Enact_PROTOCOL-blue?logo=discord&logoColor=white)](https://discord.gg/mMfxvMtHyS)
 
@@ -64,7 +64,7 @@ examples:
 
 ### Universal Command Execution
 
-Enact's superpower is its **universal command interface**. Any shell command works:
+Enact's superpower is its **command interface** executed through the Enact MCP Server. Any shell command works:
 
 ```yaml
 # NPX with pinned versions
@@ -84,8 +84,8 @@ command: "cat ${file} | grep ${pattern} | wc -l"
 # Complex workflows with pinned tools
 command: |
   echo "Processing ${input}" &&
-  npx github:org/validator#v2.1.0 --data='${input}' &&
-  npx github:org/transformer#v1.5.2 --data='${input}' > output.json
+  npx github:org/validator#d7c9f2e8a &&
+  npx github:org/transformer#b8a5d3c1f --data='${input}' > output.json
 ```
 
 ### Progressive Complexity
@@ -99,7 +99,7 @@ description: "Does something useful"
 command: "npx my-tool '${input}'"
 ```
 
-**Level 2: Standard** (+ validation & testing)
+**Level 2: Standard** (+ validation)
 ```yaml
 name: MyTool
 description: "Does something useful"
@@ -116,15 +116,23 @@ inputSchema:
   required: ["data"]
 ```
 
-**Level 3: Advanced** (+ signatures & environment)
+**Level 3: Advanced** (+ environment & signatures)
 ```yaml
 name: MyTool
 description: "Does something useful"
 command: "npx github:myorg/my-tool#abc123def '${input}'"
 namespace: "tools.mycompany.analytics"
-signatures:
-  author: "MEUCIDWjMXPWhFS..."
-  registry: "MEQCIHGmTlcwSxf..."
+env:
+  API_KEY:
+    description: "API key for service access"
+    source: "https://example.com/api → Settings → API Keys"
+    required: true
+signature:
+  algorithm: sha256
+  signer: developer-id
+  type: ecdsa-p256
+  created: 2025-05-15T23:55:41.328Z
+  value: MEUCICwNLAzYZQAul2/uhPkdjxNrNwkFWy2qYOGV5pWIpdabAiEAlpDsXUiOMKrXgIVZcddn6CoPsseC/3eLCSXEMOScg+M=
 ```
 
 ---
@@ -141,26 +149,19 @@ MCP defines [tools](https://modelcontextprotocol.io/docs/concepts/tools) with a 
   "inputSchema": {           // JSON Schema for the tool's parameters
     "type": "object",
     "properties": {}         // Tool-specific parameters
-  },
-  "annotations": {           // Optional hints about tool behavior
-    "title": "string",                // Human-readable title for the tool (optional)
-    "readOnlyHint": false,           // If true, the tool does not modify its environment
-    "destructiveHint": true,         // If true, the tool may perform destructive updates
-    "idempotentHint": false,         // If true, repeated calls with same args have no additional effect
-    "openWorldHint": true            // If true, tool interacts with external entities
   }
 }
 ```
 
-**Enact builds on this foundation** by adding essential lifecycle management capabilities that MCP doesn't address:
+**Enact builds on this foundation** by adding essential lifecycle management capabilities:
 
 | Capability | MCP | Enact |
 |------------|-----|-------|
-| Communication Protocol | ✅ Defines interaction | ❌ Uses MCP |
-| Tool Execution | ❌ Server implementation required | ✅ Universal command interface |
+| Communication Protocol | ✅ Defines interaction | ✅ Uses MCP protocol |
+| Tool Execution | ❌ Server implementation required | ✅ Command-based execution via Enact MCP Server |
 | Tool Discovery | ❌ | ✅ Semantic search & registry |
 | Tool Packaging | ❌ | ✅ Standard YAML schema |
-| Versioning & Reproducibility | ❌ | ✅ Version pinning & hashes |
+| Versioning & Reproducibility | ❌ | ✅ Version pinning in commands |
 | Security & Verification | ❌ | ✅ Cryptographic signatures |
 | Environment Management | ❌ | ✅ Namespace isolation |
 
@@ -174,11 +175,12 @@ MCP defines [tools](https://modelcontextprotocol.io/docs/concepts/tools) with a 
 # Required
 name: string         # Tool identifier
 description: string  # What it does
-command: string      # Shell command to execute (include version pins here)
+command: string      # Shell command to execute (with version pins)
 
 # Recommended
 namespace: string    # Environment variable namespace (e.g., "tools.enact.discord")
-timeout: duration    # Default: 30s (e.g., "5m", "1h")
+timeout: string      # Duration format: "30s", "5m", "1h" (default: "30s")
+tags: [string]       # Tags for search and categorization
 ```
 
 ### Input Schema
@@ -216,7 +218,7 @@ annotations:
 
 ### Environment Variables
 
-Environment variables are scoped by namespace with filesystem isolation:
+Environment variables use detailed object syntax for security and documentation:
 
 ```yaml
 # Define tool namespace
@@ -224,8 +226,18 @@ namespace: "tools.enact.discord"
 
 # Declare required environment variables
 env:
-  - "API_KEY"
-  - "WEBHOOK_URL"
+  API_KEY:
+    description: "Discord bot API key"
+    source: "https://discord.com/developers → Create App → Bot → Token"
+    required: true
+  WEBHOOK_URL:
+    description: "Discord webhook for notifications"
+    source: "Server Settings → Integrations → Webhooks → Create"
+    required: true
+  REQUEST_TIMEOUT:
+    description: "API request timeout in seconds"
+    default: "10"
+    required: false
 ```
 
 **Storage Structure:**
@@ -242,35 +254,32 @@ env:
 **Security Model:**
 - Each tool execution reads ONLY from its namespace directory
 - No access to parent process environment
-- Secrets are stored in plain `.env` files (use OS file permissions for security)
-- For additional security, use OS keychain or encrypted disk
-
-**Example Usage:**
-```yaml
-name: DiscordNotifier
-namespace: "tools.enact.discord"
-description: "Send notifications to Discord"
-command: "npx github:enact/discord-notify#v1.2.0 --key=$API_KEY --webhook=$WEBHOOK_URL --message='${message}'"
-env:
-  - "API_KEY"
-  - "WEBHOOK_URL"
-inputSchema:
-  type: object
-  properties:
-    message:
-      type: string
-      description: "Message to send"
-  required: ["message"]
-```
+- Secrets stored in `.env` files (use OS file permissions)
+- Simple security model to start, will enhance over time
 
 ### Testing & Examples
 
 ```yaml
 examples:
-  - input: {text: "hello world"}
-    output: {words: 2}
+  - input: {text: "hello world", format: "json"}
+    output: {words: 2, characters: 11}
+    description: "Basic word counting"
   - input: {text: "one"}
     output: {words: 1}
+    description: "Single word test"
+```
+
+### Cryptographic Signatures
+
+Tools can be signed for authenticity verification:
+
+```yaml
+signature:
+  algorithm: sha256
+  signer: developer-id
+  type: ecdsa-p256
+  created: 2025-05-15T23:55:41.328Z
+  value: MEUCICwNLAzYZQAul2/uhPkdjxNrNwkFWy2qYOGV5pWIpdabAiEAlpDsXUiOMKrXgIVZcddn6CoPsseC/3eLCSXEMOScg+M=
 ```
 
 ---
@@ -283,16 +292,16 @@ flowchart TB
     CLI --> Registry[(Enact Registry)]
     
     LLM --> MCPClient["MCP Client"]
-    MCPClient --> MCPServer["Enact-aware MCP Server"]
-    MCPServer --> Registry
-    MCPServer --> ExecEnv["Execution Environment"]
+    MCPClient --> EnactMCP["Enact MCP Server"]
+    EnactMCP --> Registry
+    EnactMCP --> ExecEnv["Command Execution"]
     
     classDef ai fill:#6366F1,color:white
     classDef enact fill:#10B981,color:white
     classDef dev fill:#7C3AED,color:white
 
     class LLM,MCPClient ai
-    class Registry,ExecEnv,MCPServer enact
+    class Registry,ExecEnv,EnactMCP enact
     class Dev,CLI dev
 ```
 
@@ -300,7 +309,7 @@ flowchart TB
 1. Developer creates tool definition (YAML)
 2. CLI validates and publishes to registry
 3. AI models discover tools via semantic search
-4. MCP server fetches and executes tools
+4. Enact MCP Server fetches and executes tool commands
 5. Results return to AI model
 
 ---
@@ -357,8 +366,8 @@ annotations:
 name: CSVProcessor
 description: "Validates and transforms CSV data"
 command: |
-  npx github:datatools/csv-validator#v1.0.5 --file='${file}' --schema='${schema}' &&
-  npx github:datatools/csv-transform#v2.3.1 --file='${file}' --output=processed.csv
+  npx github:datatools/csv-validator#a9c3e7d2f --file='${file}' --schema='${schema}' &&
+  npx github:datatools/csv-transform#f8b5e2c9d --file='${file}' --output=processed.csv
 tags: ["data", "csv", "validation", "etl", "pipeline"]
 timeout: 5m
 inputSchema:
@@ -372,6 +381,35 @@ inputSchema:
       format: uri
       description: "Validation schema URL"
   required: ["file"]
+```
+
+### Video Processing
+```yaml
+name: VideoTranscoder
+description: "Transcodes videos using GPU acceleration"
+command: "docker run --gpus all video-tools@sha256:d9c8e2f7a... transcode --input='${input}' --output='${output}' --format='${format}'"
+tags: ["video", "media", "transcoding", "gpu"]
+timeout: 30m
+resources:
+  memory: "16Gi"
+  gpu: "24Gi"
+  disk: "100Gi"
+inputSchema:
+  type: object
+  properties:
+    input:
+      type: string
+      description: "Input video URL"
+    output:
+      type: string
+      description: "Output filename"
+    format:
+      type: string
+      enum: ["mp4", "webm", "mov"]
+      default: "mp4"
+  required: ["input", "output"]
+annotations:
+  openWorldHint: true
 ```
 
 ### API Integration
@@ -413,12 +451,12 @@ annotations:
 
 ### Version Pinning
 
-Pin tools directly in commands for reproducibility:
+Always pin tool versions directly in commands for reproducibility:
 
 ```yaml
-# NPX with GitHub and commits/tags
-command: "npx github:org/tool#v1.2.3"
+# NPX with GitHub - use commit hashes (9+ chars recommended)
 command: "npx github:org/tool#abc123def"
+command: "npx github:org/tool#f9e2b8d6a"
 
 # NPM registry with versions
 command: "npx my-tool@1.2.3"
@@ -433,31 +471,19 @@ command: "curl https://example.com/api/v2/process"
 
 ### Cryptographic Signatures
 
-Verify tool authenticity with multi-party signatures:
+Verify tool authenticity with signatures:
 
 ```yaml
-signatures:
-  - algorithm: "sha256"
-    type: "ecdsa-p256"
-    signer: "developer@company.com"
-    role: "author"
-    created: "2025-01-15T10:30:00.000Z"
-    value: "MEUCIDWjMXPWhFS/1Ah3yLG4PyKrideWS..."
-    
-  - algorithm: "sha256"
-    type: "ecdsa-p256"
-    signer: "enact-registry"
-    role: "registry"
-    created: "2025-01-15T11:45:00.000Z"
-    value: "MEQCIHGmTlcwSxfJL8nTYtBGLpA9dKxI..."
+signature:
+  algorithm: sha256
+  signer: developer-id
+  type: ecdsa-p256
+  created: 2025-05-15T23:55:41.328Z
+  value: MEUCICwNLAzYZQAul2/uhPkdjxNrNwkFWy2qYOGV5pWIpdabAiEAlpDsXUiOMKrXgIVZcddn6CoPsseC/3eLCSXEMOScg+M=
+  role: "author" # role is optional description of the signer.
 ```
 
-**Signature Roles:**
-- `author`: Original tool developer
-- `registry`: Registry verification and approval
-- `enterprise`: Enterprise security team approval
-- `deployment`: Server deployment authorization
-
+**Signature verification is handled automatically by the Enact MCP Server.**
 
 ---
 
@@ -484,7 +510,7 @@ enact search "text analysis"
 
 ## 🌐 MCP Integration
 
-Enact tools are automatically available to MCP clients:
+Enact tools are available through the Enact MCP Server:
 
 ```javascript
 // Search for tools
@@ -492,8 +518,12 @@ const tools = await client.call('enact-search-capabilities', {
   query: 'sentiment analysis'
 });
 
-// Register and use a tool
-await client.call('enact-register-capability', { id: tools[0].id });
+// Register a tool
+await client.call('enact-register-capability', { 
+  id: tools[0].id 
+});
+
+// Execute a registered tool
 const result = await client.call('execute-capability-by-id', {
   id: tools[0].id,
   args: { text: 'I love this!' }
@@ -549,7 +579,7 @@ Group related tools and prevent variable conflicts:
 Use `readOnlyHint`, `idempotentHint`, `destructiveHint`, and `openWorldHint` to help AI models understand tool behavior.
 
 ### 7. Set Appropriate Timeouts
-Match timeout values to expected execution time. Use longer timeouts for data processing, shorter for API calls.
+Use duration format: `30s`, `5m`, `1h`. Match timeout values to expected execution time.
 
 ### 8. Use Tags for Better Discovery
 Add relevant tags to help users find your tools:
@@ -567,63 +597,74 @@ Add relevant tags to help users find your tools:
 # Required fields
 name: string         # Tool identifier (required)
 description: string  # Human-readable description (required)
-command: string      # Shell command to execute (required)
+command: string      # Shell command to execute with version pins (required)
 
-# Security and verification
-version: string      # Version identifier (optional)
-
-# Execution control
-timeout: string      # Human-readable timeout (e.g., "30s", "5m", "1h")
+# Recommended fields
 namespace: string    # Environment variable namespace
-env: object|[string] # Environment variables (detailed object or simple array)
-
-# Schema definitions
-inputSchema: object  # Input parameters as JSON Schema
-outputSchema: object # Output structure as JSON Schema
-
-# Discovery and categorization
+timeout: string      # Duration: "30s", "5m", "1h" (default: "30s")
 tags: [string]       # Tags for search and categorization
+
+# Optional fields
+version: string      # Enact manifest version - for tracking changes to the tool definition itself (optional)
+resources:           # Resource requirements (optional)
+  memory: string     # System memory needed (e.g., "16Gi", "32Gi")
+  gpu: string        # GPU memory needed (e.g., "24Gi", "48Gi")
+  disk: string       # Disk space needed (e.g., "100Gi", "500Gi")
 ```
 
-### Documentation
+### Environment Variables
 
 ```yaml
-doc: string          # Markdown documentation
-tags: [string]       # Tags for discovery and categorization
-authors:             # Tool creators
+env:
+  VARIABLE_NAME:
+    description: string  # What this variable is for (required)
+    source: string       # Where to get this value (required)
+    required: boolean    # Whether this is required (required)
+    default: string      # Default value if not set (optional)
+```
+
+### Schema Definitions
+
+```yaml
+inputSchema: object  # Input parameters as JSON Schema
+outputSchema: object # Output structure as JSON Schema (optional)
+```
+
+### Documentation and Testing
+
+```yaml
+doc: string          # Markdown documentation (optional)
+authors:             # Tool creators (optional)
   - name: string     # Author name (required)
     email: string    # Author email (optional)
     url: string      # Author website (optional)
-```
 
-### Metadata and Security
-
-```yaml
-annotations:         # MCP-aligned behavior hints
-  title: string      # Human-readable display name
-  readOnlyHint: boolean      # No environment modifications
-  destructiveHint: boolean   # May make irreversible changes
-  idempotentHint: boolean    # Multiple calls = single call
-  openWorldHint: boolean     # Interacts with external systems
-
-signatures:          # Array of signatures (optional)
-  - algorithm: string # Hash algorithm (e.g., "sha256")
-    type: string     # Signature algorithm (e.g., "ecdsa-p256")
-    signer: string   # Signer identifier (email, server name, etc.)
-    role: string     # Signature role (author, registry, enterprise, deployment)
-    keyId: string    # Optional key identifier for rotation (optional)
-    created: string  # ISO timestamp of signature creation
-    expires: string  # Optional expiration timestamp (optional)
-    value: string    # Cryptographic signature value (required)
-```
-
-### Testing and Examples
-
-```yaml
 examples:            # Test cases and expected outputs
   - input: object    # Input parameters
     output: any      # Expected output
-    description: string # Optional test description
+    description: string # Test description (optional)
+```
+
+### Behavior Annotations
+
+```yaml
+annotations:         # MCP-aligned behavior hints
+  title: string      # Human-readable display name (optional)
+  readOnlyHint: boolean      # No environment modifications (default: false)
+  destructiveHint: boolean   # May make irreversible changes (default: false)
+  idempotentHint: boolean    # Multiple calls = single call (default: false)
+  openWorldHint: boolean     # Interacts with external systems (default: false)
+```
+
+### Security
+
+```yaml
+signature:           # Cryptographic signature (optional)
+  algorithm: string  # Hash algorithm: "sha256" (required)
+  type: string       # Signature type: "ecdsa-p256" (required)
+  signer: string     # Signer identifier (required)
+  created: string    # ISO timestamp (required)
+  value: string      # Base64 encoded signature (required)
 ```
 
 ### Extensions
@@ -638,19 +679,20 @@ x-*: any             # Custom extensions (must begin with 'x-')
 
 **Current (Alpha)**
 - ✅ Core protocol specification
-- ✅ Universal command execution
-- ✅ Basic MCP integration
+- ✅ Command-based execution
+- ✅ Basic MCP integration via Enact MCP Server
+- 🔄 Signature verification implementation
 
 **Next (Beta)**
 - 🔄 Enhanced CLI with testing
 - 🔄 Public registry launch
-- 🔄 Signature verification
-- 🔄 Advanced security policies
+- 🔄 Advanced security features
+- 🔄 Performance optimizations
 
 **Future**
 - ⏳ Visual tool builder
 - ⏳ Marketplace features
-- ⏳ Performance optimizations
+- ⏳ Enhanced environment security
 - ⏳ Multi-language execution environments
 
 ---
