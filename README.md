@@ -1,4 +1,4 @@
- # Enact Protocol
+# Enact Protocol
 
 ![Status: Alpha](https://img.shields.io/badge/Status-Alpha-yellow) ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg) [![Discord](https://img.shields.io/badge/Discord-Enact_PROTOCOL-blue?logo=discord&logoColor=white)](https://discord.gg/mMfxvMtHyS)
 
@@ -366,8 +366,8 @@ annotations:
 name: CSVProcessor
 description: "Validates and transforms CSV data"
 command: |
-  npx github:datatools/csv-validator#a9c3e7d2f --file='${file}' --schema='${schema}' &&
-  npx github:datatools/csv-transform#f8b5e2c9d --file='${file}' --output=processed.csv
+  enact exec csv-validator --file='${file}' --schema='${schema}' &&
+  enact exec csv-transformer --file='${file}' --output=processed.csv
 tags: ["data", "csv", "validation", "etl", "pipeline"]
 timeout: 5m
 inputSchema:
