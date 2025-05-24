@@ -36,10 +36,10 @@ That's it! This tool can now be published, discovered, and used by any AI model.
 ```yaml
 name: WordCounter
 description: "Counts words in text"
-command: "npx github:wordtools/counter#v1.2.3 --text='${text}' --format=${format}"
-timeout: 30s
+command: "npx github:wordtools/counter#e5f7a9c2d --text='${text}' --format='${format}'"
+timeout: "30s"
 
-# Input validation
+# Input validation (JSON Schema)
 inputSchema:
   type: object
   properties:
@@ -62,24 +62,45 @@ examples:
 
 ## 🧱 Core Concepts
 
-### Universal Command Execution
+### Field Requirements
 
-Enact's superpower is its **command interface** executed through the Enact MCP Server. Any shell command works:
+Enact uses a three-tier approach to field requirements:
 
 ```yaml
-# NPX with pinned versions
-command: "npx github:org/tool#v1.2.3 --input='${data}'"
-command: "npx github:org/tool#abc123def --input='${data}'"
+# REQUIRED (minimum viable tool)
+name: string         # Tool identifier
+description: string  # What the tool does  
+command: string      # Shell command to execute
 
-# Docker with specific tags/digests
+# RECOMMENDED (production best practices)
+timeout: string      # Execution timeout (Go duration format)
+tags: [string]       # Search and categorization tags
+
+# OPTIONAL (advanced features)
+namespace: string    # Environment variable namespace
+inputSchema: object  # JSON Schema for input validation
+signature: object    # Cryptographic signature
+resources: object    # Resource requirements
+```
+
+### Universal Command Execution
+
+Enact's superpower is its **command interface** executed through the Enact MCP Server. Any shell command works with version pinning for reproducibility:
+
+```yaml
+# NPX with GitHub commit hashes (secure, immutable)
+command: "npx github:org/tool#abc123def --input='${data}'"
+command: "npx github:org/tool#f9e2b8d6a --input='${data}'"
+
+# Docker with specific tags/digests  
 command: "docker run --rm my-tool:v1.0 '${input}'"
 command: "docker run --rm my-tool@sha256:abc123... '${input}'"
 
-# HTTP APIs (version in URL)
+# HTTP APIs with version in URL
 command: "curl -s 'https://api.example.com/v1/process' -d '${json}'"
 
 # Shell pipelines
-command: "cat ${file} | grep ${pattern} | wc -l"
+command: "cat '${file}' | grep '${pattern}' | wc -l"
 
 # Complex workflows with pinned tools
 command: |
@@ -92,18 +113,21 @@ command: |
 
 Start simple, add features as needed:
 
-**Level 1: Basic** (3 lines)
+**Level 1: Minimal** (3 required fields)
 ```yaml
 name: MyTool
 description: "Does something useful"
-command: "npx my-tool '${input}'"
+command: "npx github:myorg/my-tool#b4a8c2d9f '${input}'"
 ```
 
-**Level 2: Standard** (+ validation)
+**Level 2: Production-Ready** (+ validation & metadata)
 ```yaml
 name: MyTool
 description: "Does something useful"
-command: "npx github:myorg/my-tool#v1.2.3 '${input}'"
+command: "npx github:myorg/my-tool#b4a8c2d9f '${input}'"
+timeout: "30s"
+tags: ["utility", "text-processing"]
+
 inputSchema:
   type: object
   properties:
@@ -116,17 +140,29 @@ inputSchema:
   required: ["data"]
 ```
 
-**Level 3: Advanced** (+ environment & signatures)
+**Level 3: Enterprise** (+ environment & signatures)
 ```yaml
 name: MyTool
 description: "Does something useful"
 command: "npx github:myorg/my-tool#abc123def '${input}'"
+timeout: "30s"
+tags: ["utility", "text-processing"]
 namespace: "tools.mycompany.analytics"
+
 env:
   API_KEY:
     description: "API key for service access"
     source: "https://example.com/api → Settings → API Keys"
     required: true
+
+inputSchema:
+  type: object
+  properties:
+    data:
+      type: string
+      description: "Input data"
+  required: ["data"]
+
 signature:
   algorithm: sha256
   signer: developer-id
@@ -169,21 +205,29 @@ MCP defines [tools](https://modelcontextprotocol.io/docs/concepts/tools) with a 
 
 ## 📋 Tool Definition Reference
 
-### Essential Fields
+### Required Fields
 
 ```yaml
-# Required
-name: string         # Tool identifier
-description: string  # What it does
-command: string      # Shell command to execute (with version pins)
+name: string         # Tool identifier (must be unique)
+description: string  # Human-readable description of what the tool does
+command: string      # Shell command to execute (with version pins recommended)
+```
 
-# Recommended
-namespace: string    # Environment variable namespace (e.g., "tools.enact.discord")
-timeout: string      # Duration format: "30s", "5m", "1h" (default: "30s")
+### Recommended Fields
+
+```yaml
+timeout: string      # Execution timeout in Go duration format: "30s", "5m", "1h" (default: "30s")
 tags: [string]       # Tags for search and categorization
 ```
 
-### Input Schema
+### Optional Fields
+
+```yaml
+namespace: string    # Environment variable namespace (e.g., "tools.enact.discord")
+version: string      # Tool definition version for tracking changes
+```
+
+### Input Schema (JSON Schema)
 
 Tools use [JSON Schema](https://json-schema.org/) for input validation:
 
@@ -205,15 +249,15 @@ inputSchema:
   required: ["text"]
 ```
 
-### Tool Behavior Hints
+### Tool Behavior Annotations
 
 ```yaml
-# Behavior hints (all default to false)
+# Behavior hints (all default to false, aligned with MCP)
 annotations:
-  readOnlyHint: true      # Doesn't modify system
-  idempotentHint: true    # Safe to retry
-  destructiveHint: false  # Makes permanent changes
-  openWorldHint: false    # Connects to internet
+  readOnlyHint: true      # Tool doesn't modify the system
+  idempotentHint: true    # Multiple calls produce same result as single call
+  destructiveHint: false  # Tool may make permanent/irreversible changes
+  openWorldHint: false    # Tool connects to external systems/internet
 ```
 
 ### Environment Variables
@@ -321,7 +365,9 @@ flowchart TB
 name: SentimentAnalyzer
 description: "Analyzes sentiment of text"
 command: "npx github:texttools/sentiment#v2.1.0 --text='${text}'"
+timeout: "30s"
 tags: ["text", "analysis", "sentiment", "nlp"]
+
 inputSchema:
   type: object
   properties:
@@ -329,9 +375,11 @@ inputSchema:
       type: string
       description: "Text to analyze"
   required: ["text"]
+
 examples:
   - input: {text: "I love this!"}
     output: {sentiment: "positive", score: 0.98}
+
 annotations:
   readOnlyHint: true
   idempotentHint: true
@@ -341,9 +389,10 @@ annotations:
 ```yaml
 name: ImageResizer
 description: "Resizes images"
-command: "docker run --rm imagetools:v3.2@sha256:abc123... resize --input='${url}' --width=${width}"
+command: "docker run --rm imagetools:v3.2@sha256:abc123... resize --input='${url}' --width='${width}'"
+timeout: "2m"
 tags: ["image", "resize", "media", "processing"]
-timeout: 2m
+
 inputSchema:
   type: object
   properties:
@@ -357,6 +406,7 @@ inputSchema:
       minimum: 1
       maximum: 4096
   required: ["url", "width"]
+
 annotations:
   openWorldHint: true
 ```
@@ -368,8 +418,9 @@ description: "Validates and transforms CSV data"
 command: |
   enact exec csv-validator --file='${file}' --schema='${schema}' &&
   enact exec csv-transformer --file='${file}' --output=processed.csv
+timeout: "5m"
 tags: ["data", "csv", "validation", "etl", "pipeline"]
-timeout: 5m
+
 inputSchema:
   type: object
   properties:
@@ -388,12 +439,14 @@ inputSchema:
 name: VideoTranscoder
 description: "Transcodes videos using GPU acceleration"
 command: "docker run --gpus all video-tools@sha256:d9c8e2f7a... transcode --input='${input}' --output='${output}' --format='${format}'"
+timeout: "30m"
 tags: ["video", "media", "transcoding", "gpu"]
-timeout: 30m
+
 resources:
   memory: "16Gi"
   gpu: "24Gi"
   disk: "100Gi"
+
 inputSchema:
   type: object
   properties:
@@ -408,6 +461,7 @@ inputSchema:
       enum: ["mp4", "webm", "mov"]
       default: "mp4"
   required: ["input", "output"]
+
 annotations:
   openWorldHint: true
 ```
@@ -415,10 +469,12 @@ annotations:
 ### API Integration
 ```yaml
 name: WeatherFetch
-namespace: "tools.enact.weather"
 description: "Gets current weather"
-command: "curl -s 'https://api.weather.com/v1/current?location=${city}&units=${units}&key=$API_KEY&timeout=${REQUEST_TIMEOUT:-10}'"
+command: "curl -s 'https://api.weather.com/v1/current?location=${city}&units=${units}&key=$API_KEY&timeout=${REQUEST_TIMEOUT}'"
+timeout: "30s"
 tags: ["weather", "api", "external", "location"]
+namespace: "tools.enact.weather"
+
 env:
   API_KEY:
     description: "Weather API key for accessing current conditions"
@@ -428,6 +484,7 @@ env:
     description: "API request timeout in seconds"
     default: "10"
     required: false
+
 inputSchema:
   type: object
   properties:
@@ -440,6 +497,7 @@ inputSchema:
       default: "metric"
       description: "Temperature units"
   required: ["city"]
+
 annotations:
   openWorldHint: true
   idempotentHint: true
@@ -458,10 +516,10 @@ Always pin tool versions directly in commands for reproducibility:
 command: "npx github:org/tool#abc123def"
 command: "npx github:org/tool#f9e2b8d6a"
 
-# NPM registry with versions
+# NPM registry with exact versions can be vulnerable to supply chain attacks and should be avoided.
 command: "npx my-tool@1.2.3"
 
-# Docker with tags or digests
+# Docker with tags or digests (digests preferred)
 command: "docker run my-tool:v1.0"
 command: "docker run my-tool@sha256:abc123..."
 
@@ -557,7 +615,7 @@ const result = await client.call('execute-capability-by-id', {
 ## 📚 Best Practices
 
 ### 1. Start Simple
-Begin with the minimal 3-line format and add features as needed.
+Begin with the minimal 3-field format and add features as needed.
 
 ### 2. Use Descriptive Names
 - ✅ `PDFToTextConverter`
@@ -579,7 +637,7 @@ Group related tools and prevent variable conflicts:
 Use `readOnlyHint`, `idempotentHint`, `destructiveHint`, and `openWorldHint` to help AI models understand tool behavior.
 
 ### 7. Set Appropriate Timeouts
-Use duration format: `30s`, `5m`, `1h`. Match timeout values to expected execution time.
+Use Go duration format: `"30s"`, `"5m"`, `"1h"`. Match timeout values to expected execution time.
 
 ### 8. Use Tags for Better Discovery
 Add relevant tags to help users find your tools:
@@ -594,19 +652,19 @@ Add relevant tags to help users find your tools:
 ### Core Fields
 
 ```yaml
-# Required fields
+# REQUIRED FIELDS
 name: string         # Tool identifier (required)
 description: string  # Human-readable description (required)
 command: string      # Shell command to execute with version pins (required)
 
-# Recommended fields
-namespace: string    # Environment variable namespace
-timeout: string      # Duration: "30s", "5m", "1h" (default: "30s")
+# RECOMMENDED FIELDS
+timeout: string      # Go duration format: "30s", "5m", "1h" (default: "30s")
 tags: [string]       # Tags for search and categorization
 
-# Optional fields
-version: string      # Enact manifest version - for tracking changes to the tool definition itself (optional)
-resources:           # Resource requirements (optional)
+# OPTIONAL FIELDS
+namespace: string    # Environment variable namespace
+version: string      # Tool definition version for tracking changes
+resources:           # Resource requirements
   memory: string     # System memory needed (e.g., "16Gi", "32Gi")
   gpu: string        # GPU memory needed (e.g., "24Gi", "48Gi")
   disk: string       # Disk space needed (e.g., "100Gi", "500Gi")
@@ -648,12 +706,12 @@ examples:            # Test cases and expected outputs
 ### Behavior Annotations
 
 ```yaml
-annotations:         # MCP-aligned behavior hints
-  title: string      # Human-readable display name (optional)
-  readOnlyHint: boolean      # No environment modifications (default: false)
-  destructiveHint: boolean   # May make irreversible changes (default: false)
-  idempotentHint: boolean    # Multiple calls = single call (default: false)
-  openWorldHint: boolean     # Interacts with external systems (default: false)
+annotations:         # MCP-aligned behavior hints (all default to false)
+  title: string              # Human-readable display name (optional)
+  readOnlyHint: boolean      # No environment modifications
+  destructiveHint: boolean   # May make irreversible changes
+  idempotentHint: boolean    # Multiple calls = single call
+  openWorldHint: boolean     # Interacts with external systems
 ```
 
 ### Security
