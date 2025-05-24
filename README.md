@@ -12,8 +12,8 @@ While MCP enables communication between AI models and tools, **Enact handles the
 
 * 🌐 **Discoverable** — semantically searchable across registries
 * 📦 **Packaged** — defined in a consistent, executable format
-* 🔐 **Secure** — protected with cryptographic signatures
-* 🕒 **Reproducible** — versioned with commit pinning for reliability
+* 🔐 **Secure** — protected with cryptographic signatures and hash verification
+* 🕒 **Reproducible** — versioned with hash pinning for reliability
 
 > **Enact provides the standards for packaging, securing, and discovering tools**
 
@@ -44,7 +44,7 @@ annotations:          # Optional hints about tool behavior
 | Communication Protocol       | ✅ Defines interaction | ❌ Uses MCP                |
 | Tool Discovery               | ❌                     | ✅ Semantic search         |
 | Tool Packaging               | ❌                     | ✅ Standard YAML schema    |
-| Versioning & Reproducibility | ❌                     | ✅ Semantic & commit-based |
+| Versioning & Reproducibility | ❌                     | ✅ Semantic & hash-based   |
 | Security & Execution Limits  | ❌                     | ✅ Signatures, timeouts    |
 
 ---
@@ -53,47 +53,52 @@ annotations:          # Optional hints about tool behavior
 
 ### 🔧 Tool Definition
 
-Enact tools are defined using a simple YAML schema:
+Enact tools are defined using a simple YAML schema with flexible command execution:
 
 ```yaml
-enact: 0.0.1
 name: HelloWorld
-description: A simple Hello World example
-type: npx
-source: hello-world-npx
-run:
-  args: ["--text={{text}}"]
+description: "A simple Hello World example"
+command: "npx hello-world-npx --text={{text}}"
 ```
 
 For more complex tools, additional fields provide essential functionality:
 
 ```yaml
-enact: 0.0.1
 name: WordCounter
-description: "Counts words in a given text."
-type: npx
-source: word-counter-tool
+description: "Counts words in a given text"
+command: "npx word-counter-tool --text={{text}} --format={{format}}"
 version: "1.2.0"
+hash: "abc123def456789"  # Pin to specific content hash for reproducibility
+timeout: 30s
 inputSchema:
   type: object
   properties:
     text:
       type: string
       description: "Text to analyze"
+    format:
+      type: string
+      enum: ["json", "plain"]
+      default: "json"
   required: ["text"]
-run:
-  args: ["--text={{text}}"]
-  timeout: 30000
 ```
 
-### 🚀 Simplified Execution Model
+### 🚀 Universal Command Execution
 
-Enact uses NPM packages (via NPX) as its universal execution environment. This approach offers several advantages:
+Enact uses a **flexible command execution model** that supports any command-line operation through standard shell syntax:
 
-- **Simplified Configuration**: One consistent way to define and execute tools
-- **Automatic Dependency Management**: NPX handles package installation automatically
-- **Universal Compatibility**: Works on any system with Node.js installed
-- **Flexible Implementation**: NPX packages can invoke any technology (Python, Rust, APIs, MCPs, etc.)
+- **NPX Packages**: `npx package-name --param={{value}}`
+- **Docker Containers**: `docker run --rm image:tag --input={{data}}`
+- **HTTP APIs**: `curl -X POST {{api_url}} -d '{{json_body}}'`
+- **Shell Pipelines**: `cat {{file}} | grep {{pattern}} | sort | uniq -c`
+- **Complex Workflows**: `npx validator {{input}} && npx processor {{input}} {{output}}`
+
+This approach offers several advantages:
+
+- **Zero Learning Curve**: Use familiar shell command syntax
+- **Maximum Flexibility**: Any command-line tool or pipeline works immediately
+- **Natural Composition**: Shell operators (pipes, redirects, &&) work as expected
+- **Easy Migration**: Existing scripts and workflows convert directly
 
 ---
 
@@ -122,22 +127,21 @@ flowchart TB
 * **Enact CLI**: Developer tool for publishing and managing tools
 * **Registry**: Centralized store for tool definitions (e.g., [enact.tools](https://enact.tools))
 * **Enact-aware MCP Server**: Implements the protocol for discovery and execution orchestration
-* **NPX Execution**: Universal runtime for tool execution
+* **Command Execution Engine**: Universal runtime that executes any shell command securely
 
 ---
 
 ## 🧪 Tool Examples
 
-### Basic Tool
+### Basic NPX Tool
 
 ```yaml
-enact: 0.0.1
 name: WordCounter
 description: "Count words in text"
-type: npx
-source: word-counter-tool
+command: "npx word-counter-tool --text={{text}}"
 version: "1.2.0"
-commit: "abc123def456789"  # Pin to specific Git commit for reproducibility
+hash: "abc123def456789"  # NPM package commit hash
+timeout: 30s
 inputSchema:
   type: object
   properties:
@@ -145,55 +149,181 @@ inputSchema:
       type: string
       description: "Text to analyze"
   required: ["text"]
-run:
-  args: ["--text={{text}}"]
-  timeout: 30000
 annotations:
   title: "Word Counter"
   readOnlyHint: true
   idempotentHint: true
 ```
 
-### Tool with Documentation and Authors
+### Docker Container Tool
 
 ```yaml
-enact: 0.0.1
-name: ImageAnalyzer
-description: "Analyzes images for objects and scenes"
-type: npx
-source: image-analyzer-tool
-version: "1.0.0"
-doc: |
-  # Image Analyzer
-  
-  This tool processes images to identify objects, scenes, and content.
-  
-  ## Usage Example
-  ```json
-  { "imageUrl": "https://example.com/image.jpg" }
-  ```
-authors:
-  - name: "AI Tools Team"
-    email: "team@example.com"
+name: ImageProcessor
+description: "Process images using containerized tools"
+command: "docker run --rm --read-only image-processor:v1.0 --input={{imageUrl}} --filter={{filter}}"
+hash: "sha256:abc123def456..."  # Docker image digest
+timeout: 2m
 inputSchema:
   type: object
   properties:
     imageUrl:
       type: string
       format: "uri"
-      description: "URL of the image to analyze"
+      description: "URL of image to process"
+    filter:
+      type: string
+      enum: ["blur", "sharpen", "vintage"]
+      default: "sharpen"
   required: ["imageUrl"]
-run:
-  args: ["--image={{imageUrl}}"]
-  timeout: 60000
-env:
-  vars:
-    VISION_API_KEY: "{{api_key}}"
+```
+
+### HTTP API Tool
+
+```yaml
+name: WeatherLookup
+description: "Get current weather for a location"
+command: "curl -s 'https://api.weather.com/v1/current?location={{location}}&units={{units}}&key=$WEATHER_API_KEY'"
+hash: "sha256:endpoint-integrity-hash"
+timeout: 15s
+env: ["WEATHER_API_KEY"]
+inputSchema:
+  type: object
+  properties:
+    location:
+      type: string
+      description: "City name or coordinates"
+    units:
+      type: string
+      enum: ["metric", "imperial"]
+      default: "metric"
+  required: ["location"]
+```
+
+### Shell Pipeline Tool
+
+```yaml
+name: LogAnalyzer
+description: "Analyze log files for patterns"
+command: "cat {{log_file}} | grep {{pattern}} | sort | uniq -c | sort -nr | head -{{limit}}"
+hash: "sha256:script-content-hash"
+timeout: 60s
+inputSchema:
+  type: object
+  properties:
+    log_file:
+      type: string
+      description: "Path to log file"
+    pattern:
+      type: string
+      description: "Pattern to search for"
+    limit:
+      type: integer
+      description: "Number of top results to return"
+      default: 10
+  required: ["log_file", "pattern"]
+```
+
+### MCP Tool Integration
+
+```yaml
+name: DatabaseQuery
+description: "Execute SQL queries via MCP"
+command: "mcp-cli cmd --server={{server}} --tool=read_query --tool-args='{{json_args}}' --raw"
+hash: "sha256:mcp-cli-hash"
+timeout: 45s
+inputSchema:
+  type: object
+  properties:
+    server:
+      type: string
+      description: "MCP server name"
+      default: "sqlite"
+    query:
+      type: string
+      description: "SQL query to execute"
+  required: ["query"]
+```
+
+### Inline Code Execution
+
+```yaml
+name: JavaScriptEval
+description: "Execute JavaScript code safely"
+command: "docker run --rm --read-only --network=none node:18-alpine node -e '{{code}}'"
+hash: "sha256:node-image-digest..."
+timeout: 30s
+security:
+  level: "production"
+inputSchema:
+  type: object
+  properties:
+    code:
+      type: string
+      description: "JavaScript code to execute"
+      maxLength: 1000
+  required: ["code"]
+```
+
+### Complex Workflow Tool
+
+```yaml
+name: DataPipeline
+description: "Multi-step data processing workflow"
+command: |
+  echo "Starting pipeline for {{dataset}}" &&
+  npx data-validator --input={{dataset}} --schema={{schema}} &&
+  npx data-transformer --input={{dataset}} --config={{config}} --output=/tmp/processed.json &&
+  npx data-uploader --file=/tmp/processed.json --destination={{destination}} &&
+  echo "Pipeline completed successfully"
+hash: "sha256:workflow-hash"
+timeout: 10m
+signatures:
+  - signer: "pipeline-team@company.com"
+    role: "author"
+    created: "2025-01-15T10:00:00.000Z"
+    value: "MEUCIDWjMXPWhFS..."
+inputSchema:
+  type: object
+  properties:
+    dataset:
+      type: string
+      description: "Input dataset URL"
+    schema:
+      type: string
+      description: "Validation schema URL"
+    config:
+      type: object
+      description: "Transformation configuration"
+    destination:
+      type: string
+      description: "Output destination"
+  required: ["dataset", "destination"]
 ```
 
 ---
 
 ## 📚 Schema Reference
+
+### Core Fields
+
+```yaml
+# Required fields
+name: string         # Tool identifier (required)
+description: string  # Human-readable description (required)
+command: string      # Shell command to execute (required)
+
+# Security and verification
+hash: string         # Content/package/image hash for verification
+version: string      # Version identifier (optional)
+
+# Execution control
+timeout: string      # Human-readable timeout (e.g., "30s", "5m", "1h")
+env: [string]        # Required environment variables
+
+# Schema definitions
+inputSchema: object  # Input parameters as JSON Schema
+outputSchema: object # Output structure as JSON Schema
+```
 
 ### Input/Output Schemas
 
@@ -234,51 +364,158 @@ outputSchema:
     - required: ["error"]
 ```
 
+### Template Variables
+
+Commands support template variable substitution:
+
+```yaml
+# Basic variable substitution
+command: "npx tool --param={{value}} --count={{number}}"
+
+# JSON encoding for complex data  
+command: "curl -X POST {{api_url}} -d '{{json_args}}'"
+
+# Environment variable access
+command: "npx tool --api-key=$API_KEY --input={{data}}"
+
+# Multi-line commands with variables
+command: |
+  echo "Processing {{filename}}" &&
+  cat {{filename}} | grep {{pattern}} > {{output_file}} &&
+  echo "Found $(wc -l < {{output_file}}) matches"
+```
+
+### Hash Verification
+
+Hash verification ensures tool integrity and can verify different types of content:
+
+```yaml
+# NPX tools: Git commit hash
+command: "npx @company/tool --input={{data}}"
+hash: "abc123def456789"  # Commit hash from package repository
+
+# Docker tools: Image digest
+command: "docker run --rm my-tool:v1.0 --input={{data}}"
+hash: "sha256:abc123def456..."  # Docker image digest
+
+# Shell scripts: Content hash
+command: "bash -c 'echo processing {{input}}'"
+hash: "sha256:script-content-hash"  # SHA256 of command content
+
+# HTTP APIs: Endpoint integrity
+command: "curl -X GET {{api_endpoint}}"
+hash: "sha256:endpoint-hash"  # Expected response or endpoint verification
+```
+
 ---
 
 ## 🔐 Security Features
 
-### Commit Pinning
+### Hash-Based Verification
 
-Lock tools to specific versions for reproducible builds:
+Ensure tool integrity with content-appropriate hashing:
 
 ```yaml
-commit: "abc123def456"
+hash: "abc123def456"        # Git commit hash for NPX packages
+hash: "sha256:abc123..."    # Docker image digest  
+hash: "sha256:content-hash" # Content hash for scripts
 ```
 
 ### Execution Timeouts
 
-Prevent runaway executions:
-```yaml
-run:
-  timeout: 30000  # 30 seconds maximum execution time
-```
-
-### Cryptographic Signatures
-
-Verify tool authenticity and integrity:
+Prevent runaway executions with human-readable timeouts:
 
 ```yaml
-signature:
-  algorithm: "sha256"
-  signer: "developer-id"
-  type: "ecdsa-p256"
-  created: "2025-04-27T06:34:31.810Z"
-  value: "MEUCIDWjMXPWhFS/1Ah3yLG4PyKrideWS/5viCLlbTb4XAC8AiEAyaT2OI1dsCryLry+RZSmvN3IYIDjfJQYM5IwS7Usgzs="
+timeout: 30s    # 30 seconds
+timeout: 5m     # 5 minutes  
+timeout: 1h     # 1 hour
 ```
+
+### Smart Security Detection
+
+Enact automatically detects security-sensitive patterns and applies appropriate protections:
+
+```yaml
+# Automatically containerized for safety
+command: "node -e '{{user_code}}'"  # Inline code execution
+
+# Enhanced security for Docker commands
+command: "docker run my-tool {{input}}"  # Auto-adds security flags
+
+# Environment variable protection  
+command: "curl -H 'Authorization: Bearer $API_TOKEN' {{url}}"  # Secure env handling
+```
+
+### Flexible Trust Models
+
+Different signature requirements for different environments:
+
+```yaml
+# Development: Author signature only
+security:
+  level: "development"
+  required_signatures: ["author"]
+
+# Production: Author + registry verification
+security:
+  level: "production" 
+  required_signatures: ["author", "registry"]
+
+# Enterprise: Full trust chain
+security:
+  level: "enterprise"
+  required_signatures: ["author", "registry", "enterprise"]
+```
+
+### Multi-Party Signatures
+
+Verify tool authenticity and integrity with role-based trust chains:
+
+```yaml
+signatures:
+  - algorithm: "sha256"
+    type: "ecdsa-p256"
+    signer: "developer@company.com"
+    role: "author"
+    created: "2025-01-15T10:30:00.000Z"
+    value: "MEUCIDWjMXPWhFS/1Ah3yLG4PyKrideWS..."
+    
+  - algorithm: "sha256"
+    type: "ecdsa-p256"
+    signer: "enact-registry"
+    role: "registry"
+    created: "2025-01-15T11:45:00.000Z"
+    value: "MEQCIHGmTlcwSxfJL8nTYtBGLpA9dKxI..."
+```
+
+**Signature Roles:**
+- `author`: Original tool developer
+- `registry`: Registry verification and approval
+- `enterprise`: Enterprise security team approval
+- `deployment`: Server deployment authorization
 
 ---
 
 ## 🌍 Environment Variables
 
-Define environment variables directly in the tool manifest:
+Define environment variables as a simple list:
+
+```yaml
+env: ["API_KEY", "DATABASE_URL", "MAX_RETRIES"]
+```
+
+Or with structured configuration:
 
 ```yaml
 env:
   vars:
-    API_KEY: "{{api_key}}"
-    MAX_RETRIES: "3"
-```
+    API_KEY:
+      description:
+
+  MAX_RETRIES:
+  TIMEOUT
+
+Environment variables are automatically passed to the execution environment and can be referenced in commands using standard shell syntax (`$VAR` or `${VAR}`).
 
 ---
 
@@ -303,25 +540,31 @@ Switch execution contexts for isolated tool sessions and clean state management.
 
 ### Direct Execution
 
-Execute by tool name via `execute-capability-by-name`.
+Execute by tool name via `execute-capability-by-id`.
+
 ---
 
 ## 🎯 Why Choose Enact?
 
 **For Tool Developers:**
-- **Standardized packaging** reduces distribution complexity
-- **Automated discovery** increases tool adoption
-- **Built-in security** protects against misuse
+- **Zero learning curve** - use familiar shell command syntax
+- **Maximum flexibility** - any command-line tool or pipeline works immediately
+- **Natural composition** - shell operators and workflows work as expected
+- **Easy migration** - existing scripts convert directly to Enact tools
 
 **For AI Application Builders:**
 - **Semantic search** simplifies tool integration
+- **Consistent execution model** for all command types
 - **Version management** ensures reliable deployments
-- **Consistent interface** for all tools
+- **Flexible tool ecosystem** supports any technology stack
 
 **For Enterprise:**
-- **Cryptographic verification** ensures tool integrity
+- **Multi-party signatures** enable flexible trust models and audit trails
+- **Role-based verification** ensures proper approval workflows
+- **Hash verification** prevents supply chain attacks
+- **Smart security detection** applies appropriate protections automatically
 - **Audit trails** track tool usage and versions
-- **Security controls** protect sensitive systems
+- **Reproducible builds** with content pinning
 
 ---
 
@@ -331,11 +574,9 @@ Execute by tool name via `execute-capability-by-name`.
 
 1. **Create a tool manifest** (`enact.yaml`):
    ```yaml
-   enact: 0.0.1
    name: MyAwesomeTool
    description: "Does something amazing"
-   type: npx
-   source: my-awesome-package
+   command: "npx my-awesome-package --input={{data}}"
    ```
 
 2. **Validate and publish**:
@@ -346,7 +587,7 @@ Execute by tool name via `execute-capability-by-name`.
 
 3. **Test integration**:
    ```bash
-   enact test my-awesome-tool --input '{"param": "value"}'
+   enact test my-awesome-tool --input '{"data": "test value"}'
    ```
 
 ### Using Enact Tools
@@ -385,19 +626,24 @@ We welcome contributions from the community!
 
 **Current (Alpha)**
 - ✅ Core protocol specification
-- ✅ NPX tool type
+- ✅ Flexible command execution model
+- ✅ Hash-based verification
+- ✅ Multi-party signature system
 - ✅ Basic MCP server integration
 
 **Next (Beta)**
-- 🔄 Enhanced security model
-- 🔄 Advanced environment configuration
-- 🔄 Performance optimizations
-- 🔄 Expanded tool registry
+- 🔄 Enact CLI
+- 🔄 Enhanced security detection and enforcement
+- 🔄 Registry with automated hash verification
+- 🔄 Role-based trust policy enforcement
+- 🔄 Performance optimizations for common patterns
 
 **Future**
-- ⏳ Federated registry support
-- ⏳ Tool composition and workflows
-- ⏳ Enterprise features (RBAC, audit logs)
+- ⏳ Auto-hash generation for published tools
+- ⏳ Advanced signature workflows and key management
+- ⏳ Visual tool composition interface
+- ⏳ Advanced security sandboxing
+- ⏳ Multi-language execution environments
 
 ---
 
@@ -407,25 +653,27 @@ We welcome contributions from the community!
 
 ```yaml
 # Required fields
-enact: 0.0.1         # Protocol version (required)
 name: string         # Tool identifier (required)
 description: string  # Human-readable description (required)
-type: npx            # Execution type, only npx supported (required)
-source: string       # NPM package name (required)
-inputSchema: object  # Input parameters as JSON Schema (required)
+command: string      # Shell command to execute (required)
 
-# Common optional fields
-version: string      # Semantic version (format: ^\\d+\\.\\d+\\.\\d+$)
-commit: string       # Specific commit hash for reproducibility
+# Security and verification
+enact: 0.0.1         # Protocol version
+hash: string         # Content/package/image hash for verification
+version: string      # Version identifier (optional)
+
+# Execution control
+timeout: string      # Human-readable timeout (e.g., "30s", "5m")
+env: [string]        # Required environment variables list
+# OR
+env:
+  vars:              # Environment variables with template support
+    description: string # descript the variable and where to get it.
+    KEY: string      # Can use templates (e.g., "{{api_key}}")
+
+# Schema definitions
+inputSchema: object  # Input parameters as JSON Schema
 outputSchema: object # Output structure as JSON Schema
-```
-
-### Execution Configuration
-
-```yaml
-run:
-  args: [string]     # Command line arguments with template variables (required)
-  timeout: number    # Maximum execution time in milliseconds (optional)
 ```
 
 ### Documentation
@@ -438,14 +686,6 @@ authors:             # Tool creators
     url: string      # Author website (optional)
 ```
 
-### Environment Variables
-
-```yaml
-env:
-  vars:              # Environment variables (secrets by default)
-    KEY: string      # Can use templates (e.g., "{{api_key}}")
-```
-
 ### Metadata and Security
 
 ```yaml
@@ -456,12 +696,21 @@ annotations:         # MCP-aligned behavior hints
   idempotentHint: boolean    # Multiple calls = single call
   openWorldHint: boolean     # Interacts with external systems
 
-signature:           # Cryptographic verification
-  algorithm: string  # Hash algorithm (e.g., "sha256")
-  signer: string     # Registry or developer ID (required)
-  type: string       # Signature algorithm (e.g., "ecdsa-p256")
-  created: string    # ISO timestamp
-  value: string      # Signature value (required)
+security:            # Security configuration
+  level: string      # "development", "production", "enterprise"
+  required_signatures: [string]  # Required signature roles
+  verified: boolean  # Registry verification status
+  audited: string    # Audit date
+
+signatures:          # Array of signatures (optional)
+  - algorithm: string # Hash algorithm (e.g., "sha256")
+    type: string     # Signature algorithm (e.g., "ecdsa-p256")
+    signer: string   # Signer identifier (email, server name, etc.)
+    role: string     # Signature role (author, registry, enterprise, deployment)
+    keyId: string    # Optional key identifier for rotation (optional)
+    created: string  # ISO timestamp of signature creation
+    expires: string  # Optional expiration timestamp (optional)
+    value: string    # Cryptographic signature value (required)
 ```
 
 ### Extensions
@@ -470,21 +719,16 @@ signature:           # Cryptographic verification
 x-*: any             # Custom extensions (must begin with 'x-')
 ```
 
-
-
 ---
 
 *"Perfection is achieved not when there is nothing more to add, but when there is nothing left to take away."*
 
  — *Antoine de Saint-Exupéry*
 
-
----
-
+--
 
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE).
-
 
 © 2025 Enact Protocol Contributors
