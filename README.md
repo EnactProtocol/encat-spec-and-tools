@@ -64,8 +64,6 @@ examples:
 
 ### Field Requirements
 
-Enact uses a three-tier approach to field requirements:
-
 ```yaml
 # REQUIRED (minimum viable tool)
 name: string         # Tool identifier
