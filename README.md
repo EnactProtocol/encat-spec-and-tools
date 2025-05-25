@@ -2,7 +2,46 @@
 
 ![Status: Alpha](https://img.shields.io/badge/Status-Alpha-yellow) ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg) [![Discord](https://img.shields.io/badge/Discord-Enact_PROTOCOL-blue?logo=discord&logoColor=white)](https://discord.gg/mMfxvMtHyS)
 
-## What is Enact?
+## Enact in 30 Seconds
+
+**Enact lets AI models use command-line tools safely and reliably.**
+
+Instead of writing code integrations, you define tools with simple YAML:
+
+```yaml
+name: PDFToText
+description: "Extracts text from PDF files"
+command: "pdftotext '${file}' -"
+```
+
+That's it. This tool can now be:
+- 🔍 **Discovered** by AI models searching for "PDF extraction"
+- 🚀 **Executed** safely in isolated environments
+- 🔐 **Verified** with cryptographic signatures
+- 📌 **Reproduced** exactly with version pinning
+
+**Why Enact?**
+- Any command-line tool becomes an AI tool
+- No coding required - just YAML
+- Built on the Model Context Protocol (MCP)
+- Secure by default with commit hashes and signatures
+
+**Get Started:**
+```bash
+# Install
+npm install -g enact-cli
+
+# Create your first tool
+enact init my-tool
+
+# Publish it
+enact publish tool.yaml
+```
+
+Now any AI using MCP can discover and use your tool!
+
+
+## Now in more detail
 
 **Enact** revolutionizes how AI tools are defined, packaged, and shared.
 
