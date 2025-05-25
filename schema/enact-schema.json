@@ -4,106 +4,7 @@
     "description": "Schema for validating Enact tool YAML files",
     "definitions": {
         "jsonSchema": {
-            "type": "object",
-            "description": "JSON Schema object",
-            "properties": {
-                "type": {
-                    "type": "string",
-                    "description": "Type of the schema",
-                    "enum": [
-                        "object",
-                        "array",
-                        "string",
-                        "number",
-                        "integer",
-                        "boolean",
-                        "null"
-                    ]
-                },
-                "properties": {
-                    "type": "object",
-                    "description": "Properties for an object schema"
-                },
-                "required": {
-                    "type": "array",
-                    "description": "Required property names",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "items": {
-                    "description": "Schema for array items",
-                    "oneOf": [
-                        {
-                            "$ref": "#/definitions/jsonSchema"
-                        },
-                        {
-                            "type": "boolean"
-                        }
-                    ]
-                },
-                "additionalProperties": {
-                    "description": "Schema for additional properties",
-                    "oneOf": [
-                        {
-                            "$ref": "#/definitions/jsonSchema"
-                        },
-                        {
-                            "type": "boolean"
-                        }
-                    ]
-                }
-            }
-        },
-        "jsonSchemaType": {
-            "type": "object",
-            "description": "JSON Schema type definition",
-            "properties": {
-                "type": {
-                    "type": "string",
-                    "description": "Type of the value",
-                    "enum": [
-                        "string",
-                        "number",
-                        "integer",
-                        "boolean",
-                        "array",
-                        "object",
-                        "null"
-                    ]
-                },
-                "description": {
-                    "type": "string",
-                    "description": "Description of the value"
-                },
-                "enum": {
-                    "type": "array",
-                    "description": "Enumeration of possible values"
-                },
-                "default": {
-                    "description": "Default value"
-                },
-                "format": {
-                    "type": "string",
-                    "description": "Format of the value"
-                },
-                "pattern": {
-                    "type": "string",
-                    "description": "Regex pattern for string validation"
-                },
-                "minimum": {
-                    "type": "number",
-                    "description": "Minimum value for numeric types"
-                },
-                "maximum": {
-                    "type": "number",
-                    "description": "Maximum value for numeric types"
-                },
-                "source": {
-                    "type": "string",
-                    "description": "Source or instructions for obtaining the value"
-                }
-            }
+            "$ref": "http://json-schema.org/draft-07/schema#"
         },
         "annotationType": {
             "type": "object",
@@ -168,7 +69,8 @@
                 "mcp",
                 "docker",
                 "wasm",
-                "http"
+                "http",
+                "js"
             ]
         },
         "source": {
@@ -178,6 +80,50 @@
         "commit": {
             "type": "string",
             "description": "Specific commit hash for version pinning"
+        },
+        "doc": {
+            "type": "string",
+            "description": "Optional documentation in Markdown format"
+        },
+        "authors": {
+            "type": "array",
+            "description": "List of authors",
+            "items": {
+                "type": "object",
+                "required": [
+                    "name"
+                ],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Author's name"
+                    },
+                    "email": {
+                        "type": "string",
+                        "description": "Author's email address",
+                        "format": "email"
+                    },
+                    "url": {
+                        "type": "string",
+                        "description": "Author's URL",
+                        "format": "uri"
+                    }
+                }
+            }
+        },
+        "dependencies": {
+            "type": "object",
+            "description": "Runtime dependencies for the tool",
+            "properties": {
+                "packages": {
+                    "type": "array",
+                    "description": "Required packages",
+                    "items": {
+                        "type": "string",
+                        "description": "Package name with optional version specifier"
+                    }
+                }
+            }
         },
         "inputSchema": {
             "$ref": "#/definitions/jsonSchema",
@@ -249,6 +195,30 @@
                 }
             ]
         },
+        "env": {
+            "type": "object",
+            "description": "Environment configuration and resource requirements",
+            "properties": {
+                "vars": {
+                    "type": "object",
+                    "description": "Environment variables (treated as secrets by default)"
+                },
+                "resources": {
+                    "type": "object",
+                    "description": "Resource requirements for execution",
+                    "properties": {
+                        "memory": {
+                            "type": "string",
+                            "description": "Required memory allocation"
+                        },
+                        "timeout": {
+                            "type": "string",
+                            "description": "Maximum execution time"
+                        }
+                    }
+                }
+            }
+        },
         "signature": {
             "type": "object",
             "description": "Cryptographic signature to verify authenticity and integrity",
@@ -257,6 +227,19 @@
                 "signer"
             ],
             "properties": {
+                "algorithm": {
+                    "type": "string",
+                    "description": "Hashing algorithm used (e.g., sha256)"
+                },
+                "type": {
+                    "type": "string",
+                    "description": "Signature algorithm and curve (e.g., ecdsa-p256)"
+                },
+                "created": {
+                    "type": "string",
+                    "description": "ISO timestamp of signature creation",
+                    "format": "date-time"
+                },
                 "value": {
                     "type": "string",
                     "description": "Cryptographic signature of the canonical tool definition"
@@ -270,6 +253,31 @@
         "annotations": {
             "$ref": "#/definitions/annotationType",
             "description": "MCP-aligned annotations providing hints to AI agents"
+        },
+        "config": {
+            "type": "object",
+            "description": "Legacy execution configuration (being phased out)",
+            "properties": {
+                "args": {
+                    "type": "array",
+                    "description": "Command arguments",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "command": {
+                    "type": "string",
+                    "description": "Command override"
+                },
+                "timeout": {
+                    "type": "number",
+                    "description": "Execution timeout in milliseconds"
+                },
+                "env": {
+                    "type": "object",
+                    "description": "Environment variables for tool execution"
+                }
+            }
         }
     },
     "patternProperties": {

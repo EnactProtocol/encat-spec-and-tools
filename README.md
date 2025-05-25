@@ -2,6 +2,8 @@
 
 ![Status: Alpha](https://img.shields.io/badge/Status-Alpha-yellow) ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg) [![Discord](https://img.shields.io/badge/Discord-Enact_PROTOCOL-blue?logo=discord&logoColor=white)](https://discord.gg/mMfxvMtHyS)
 
+**Enact** revolutionizes how AI tools are defined, packaged, and shared.
+
 ## Enact in 30 Seconds
 
 **Enact lets AI models use command-line tools safely and reliably.**
@@ -9,16 +11,16 @@
 Instead of writing code integrations, you define tools with simple YAML:
 
 ```yaml
-name: PDFToText
-description: "Extracts text from PDF files"
-command: "pdftotext '${file}' -"
+name: NasaMarkdownCrawler
+description: "Extracts markdown content from nasa website"
+command: "uvx --from git+https://github.com/paulpierre/markdown-crawler@d47cbd5 markdown-crawler https://www.nasa.gov/news/"
 ```
 
 That's it. This tool can now be:
-- 🔍 **Discovered** by AI models searching for "PDF extraction"
-- 🚀 **Executed** safely in isolated environments
+- 🔍 **Discovered** by AI models searching for "web scraping" or "markdown extraction"
+- 🚀 **Executed** safely without local installation
 - 🔐 **Verified** with cryptographic signatures
-- 📌 **Reproduced** exactly with version pinning
+- 📌 **Reproduced** exactly with commit hash pinning
 
 **Why Enact?**
 - Any command-line tool becomes an AI tool
@@ -40,10 +42,7 @@ enact publish tool.yaml
 
 Now any AI using MCP can discover and use your tool!
 
-
 ## Now in more detail
-
-**Enact** revolutionizes how AI tools are defined, packaged, and shared.
 
 Enact is a protocol that complements the [Model Context Protocol (MCP)](https://github.com/modelcontextprotocol) by providing a standardized way to define, package, discover, and secure AI tools.
 
@@ -63,7 +62,7 @@ While MCP enables communication between AI models and tools, **Enact handles the
 ### Your First Tool (3 lines!)
 
 ```yaml
-name: HelloWorld
+name: hello-world
 description: "Greets the world"
 command: "echo 'Hello, ${name}!'"
 ```
@@ -73,28 +72,28 @@ That's it! This tool can now be published, discovered, and used by any AI model.
 ### A More Complete Example
 
 ```yaml
-name: WordCounter
-description: "Counts words in text"
-command: "npx github:wordtools/counter#e5f7a9c2d --text='${text}' --format='${format}'"
+name: JSONFormatter
+description: "Formats and validates JSON data"
+command: "npx github:stedolan/jq@a7f6ab2c --raw-output '${filter}' <<< '${json}'"
 timeout: "30s"
 
 # Input validation (JSON Schema)
 inputSchema:
   type: object
   properties:
-    text:
+    json:
       type: string
-      description: "Text to analyze"
-    format:
+      description: "JSON data to process"
+    filter:
       type: string
-      enum: ["json", "plain"]
-      default: "json"
-  required: ["text"]
+      description: "jq filter expression"
+      default: "."
+  required: ["json"]
 
 # Test cases
 examples:
-  - input: {text: "hello world", format: "json"}
-    output: '{"words": 2, "characters": 11}'
+  - input: {json: '{"name":"John","age":30}', filter: ".name"}
+    output: "John"
 ```
 
 ---
@@ -126,24 +125,28 @@ Enact's superpower is its **command interface** executed through the Enact MCP S
 
 ```yaml
 # NPX with GitHub commit hashes (secure, immutable)
-command: "npx github:org/tool#abc123def --input='${data}'"
-command: "npx github:org/tool#f9e2b8d6a --input='${data}'"
+command: "npx github:prettier/prettier#abc123 --write '${file}'"
+command: "npx github:eslint/eslint#def456 --fix '${file}'"
+
+# UVX with specific commits (Python tools)
+command: "uvx --from git+https://github.com/psf/black@abc123 black '${file}'"
+command: "uvx --from git+https://github.com/astral-sh/ruff@def456 ruff check '${file}'"
 
 # Docker with specific tags/digests  
-command: "docker run --rm my-tool:v1.0 '${input}'"
-command: "docker run --rm my-tool@sha256:abc123... '${input}'"
+command: "docker run --rm pandoc/core:3.1.11 -f markdown -t html '${input}'"
+command: "docker run --rm pandoc/core@sha256:abc123... '${input}'"
 
 # HTTP APIs with version in URL
 command: "curl -s 'https://api.example.com/v1/process' -d '${json}'"
 
-# Shell pipelines
-command: "cat '${file}' | grep '${pattern}' | wc -l"
+# Shell pipelines with pinned tools
+command: "echo '${text}' | npx github:sindresorhus/slugify-cli#abc123"
 
-# Complex workflows with pinned tools
+# Complex workflows with multiple tools
 command: |
   echo "Processing ${input}" &&
-  npx github:org/validator#d7c9f2e8a &&
-  npx github:org/transformer#b8a5d3c1f --data='${input}' > output.json
+  uvx --from git+https://github.com/yaml/pyyaml@abc123 python -m yaml validate &&
+  npx github:prettier/prettier#def456 --write output.yaml
 ```
 
 ### Progressive Complexity
@@ -152,65 +155,70 @@ Start simple, add features as needed:
 
 **Level 1: Minimal** (3 required fields)
 ```yaml
-name: MyTool
-description: "Does something useful"
-command: "npx github:myorg/my-tool#b4a8c2d9f '${input}'"
+name: SlugifyText
+description: "Converts text to URL-friendly slugs"
+command: "npx github:sindresorhus/slugify-cli@b4a8c2d9f '${text}'"
 ```
 
 **Level 2: Production-Ready** (+ validation & metadata)
 ```yaml
-name: MyTool
-description: "Does something useful"
-command: "npx github:myorg/my-tool#b4a8c2d9f '${input}'"
+name: MarkdownToHTML
+description: "Converts markdown to HTML with syntax highlighting"
+command: "npx github:markdown-it/markdown-it-cli@abc123 -o '${output}' '${input}'"
 timeout: "30s"
-tags: ["utility", "text-processing"]
+tags: ["markdown", "html", "converter", "documentation"]
 
 inputSchema:
   type: object
   properties:
-    data:
+    input:
       type: string
-      description: "Input data"
-    format:
+      description: "Markdown content or file path"
+    output:
       type: string
-      enum: ["json", "xml"]
-  required: ["data"]
+      description: "Output HTML file path"  
+      default: "output.html"
+  required: ["input"]
 
 # Output schema helps AI models understand tool responses
 outputSchema:
   type: object
   properties:
-    result:
+    success:
+      type: boolean
+      description: "Whether conversion succeeded"
+    outputPath:
       type: string
-      description: "Processed data"
-    status:
-      type: string
-      enum: ["success", "error"]
-  required: ["result", "status"]
+      description: "Path to generated HTML file"
+  required: ["success", "outputPath"]
 ```
 
 **Level 3: Enterprise** (+ environment & signatures)
 ```yaml
-name: MyTool
-description: "Does something useful"
-command: "npx github:myorg/my-tool#abc123def '${input}'"
-timeout: "30s"
-tags: ["utility", "text-processing"]
-namespace: "tools.mycompany.analytics"
+name: OpenAICodeReview
+description: "Reviews code using OpenAI's API"
+command: "uvx --from git+https://github.com/openai/openai-python@abc123 python -m openai.cli review --file='${file}' --model='${model}'"
+timeout: "2m"
+tags: ["ai", "code-review", "openai", "analysis"]
+namespace: "tools.enact.openai"
 
 env:
-  API_KEY:
-    description: "API key for service access"
-    source: "https://example.com/api → Settings → API Keys"
+  OPENAI_API_KEY:
+    description: "OpenAI API key for GPT access"
+    source: "https://platform.openai.com/api-keys"
     required: true
 
 inputSchema:
   type: object
   properties:
-    data:
+    file:
       type: string
-      description: "Input data"
-  required: ["data"]
+      description: "Code file to review"
+    model:
+      type: string
+      enum: ["gpt-4", "gpt-3.5-turbo"]
+      default: "gpt-4"
+  required: ["file"]
 
 signature:
   algorithm: sha256
@@ -427,11 +435,11 @@ flowchart TB
 
 ### Text Analysis
 ```yaml
-name: SentimentAnalyzer
-description: "Analyzes sentiment of text"
-command: "npx github:texttools/sentiment#v2.1.0 --text='${text}'"
+name: TextStatistics
+description: "Analyzes text statistics and readability"
+command: "npx github:sindresorhus/text-stats-cli#abc123 '${text}'"
 timeout: "30s"
-tags: ["text", "analysis", "sentiment", "nlp"]
+tags: ["text", "analysis", "statistics", "readability"]
 
 inputSchema:
   type: object
@@ -442,32 +450,96 @@ inputSchema:
   required: ["text"]
 
 examples:
-  - input: {text: "hello world", format: "json"}
-    output: {words: 2, characters: 11}
-    description: "Basic word counting"
-  - input: {text: "one"}
-    output: {words: 1}
-    description: "Single word test"
+  - input: {text: "The quick brown fox jumps over the lazy dog."}
+    output: |
+      {
+        "words": 9,
+        "characters": 44,
+        "sentences": 1,
+        "readability": "easy"
+      }
+    description: "Basic text analysis"
 
 outputSchema:
   type: object
   properties:
     words:
       type: integer
-      description: "Number of words found"
+      description: "Number of words"
     characters:
       type: integer
-      description: "Number of characters found"
-  required: ["words"]
+      description: "Number of characters"
+    sentences:
+      type: integer
+      description: "Number of sentences"
+    readability:
+      type: string
+      description: "Reading difficulty level"
 ```
 
-### Image Processing
+### Code Formatting
 ```yaml
-name: ImageResizer
-description: "Resizes images"
-command: "docker run --rm imagetools:v3.2@sha256:abc123... resize --input='${url}' --width='${width}'"
+name: PrettierFormatter
+description: "Formats code using Prettier"
+command: "npx github:prettier/prettier@3.3.3 --write '${file}' --config '${config}'"
+timeout: "1m"
+tags: ["code", "formatter", "prettier", "javascript", "typescript"]
+
+inputSchema:
+  type: object
+  properties:
+    file:
+      type: string
+      description: "File or glob pattern to format"
+    config:
+      type: string
+      description: "Path to prettier config"
+      default: ".prettierrc"
+  required: ["file"]
+
+annotations:
+  destructiveHint: true  # Modifies files in place
+```
+
+### Data Validation
+```yaml
+name: JSONSchemaValidator
+description: "Validates JSON against a schema"
+command: "npx github:ajv-validator/ajv-cli@v5.0.0 validate -s '${schema}' -d '${data}'"
+timeout: "30s"
+tags: ["json", "validation", "schema", "data"]
+
+inputSchema:
+  type: object
+  properties:
+    schema:
+      type: string
+      description: "Path to JSON schema file"
+    data:
+      type: string
+      description: "Path to data file to validate"
+  required: ["schema", "data"]
+
+outputSchema:
+  type: object
+  properties:
+    valid:
+      type: boolean
+      description: "Whether the data is valid"
+    errors:
+      type: array
+      description: "Validation errors if any"
+      items:
+        type: object
+```
+
+### Web Scraping
+```yaml
+name: WebContentExtractor
+description: "Extracts content from web pages as markdown"
+command: "uvx --from git+https://github.com/paulpierre/markdown-crawler@d47cbd5 markdown-crawler '${url}' --depth='${depth}'"
 timeout: "2m"
-tags: ["image", "resize", "media", "processing"]
+tags: ["web", "scraping", "markdown", "content", "extraction"]
 
 inputSchema:
   type: object
@@ -475,16 +547,18 @@ inputSchema:
     url:
       type: string
       format: uri
-      description: "Image URL"
-    width:
+      description: "URL to scrape"
+    depth:
       type: integer
-      description: "Target width in pixels"
-      minimum: 1
-      maximum: 4096
-  required: ["url", "width"]
+      description: "Crawl depth (0 for single page)"
+      default: 0
+      minimum: 0
+      maximum: 3
+  required: ["url"]
 
 annotations:
   openWorldHint: true
+  readOnlyHint: true
 ```
 
 ### Data Pipeline
@@ -509,7 +583,6 @@ inputSchema:
       description: "Validation schema URL"
   required: ["file"]
 ```
-
 ### Video Processing
 ```yaml
 name: VideoTranscoder
@@ -542,41 +615,37 @@ annotations:
   openWorldHint: true
 ```
 
-### API Integration
+### API Testing
 ```yaml
-name: WeatherFetch
-description: "Gets current weather"
-command: "curl -s 'https://api.weather.com/v1/current?location=${city}&units=${units}&key=$API_KEY&timeout=${REQUEST_TIMEOUT}'"
+name: HTTPTester
+description: "Tests HTTP endpoints"
+command: "npx github:sindresorhus/got-cli@v3.0.0 '${url}' --method='${method}' --headers='${headers}' --body='${body}'"
 timeout: "30s"
-tags: ["weather", "api", "external", "location"]
-namespace: "tools.enact.weather"
-
-env:
-  API_KEY:
-    description: "Weather API key for accessing current conditions"
-    source: "https://weather.com/developers → Create Account → API Keys"
-    required: true
-  REQUEST_TIMEOUT:
-    description: "API request timeout in seconds"
-    default: "10"
-    required: false
+tags: ["api", "http", "testing", "rest"]
 
 inputSchema:
   type: object
   properties:
-    city:
+    url:
       type: string
-      description: "City name"
-    units:
+      format: uri
+      description: "URL to test"
+    method:
       type: string
-      enum: ["metric", "imperial"]
-      default: "metric"
-      description: "Temperature units"
-  required: ["city"]
+      enum: ["GET", "POST", "PUT", "DELETE", "PATCH"]
+      default: "GET"
+    headers:
+      type: string
+      description: "JSON string of headers"
+      default: "{}"
+    body:
+      type: string
+      description: "Request body"
+  required: ["url"]
 
 annotations:
   openWorldHint: true
-  idempotentHint: true
+  idempotentHint: false  # Depends on the method
 ```
 
 ---
@@ -590,14 +659,15 @@ Always pin tool versions directly in commands for reproducibility:
 ```yaml
 # NPX with GitHub - use commit hashes (9+ chars recommended)
 command: "npx github:org/tool#abc123def"
-command: "npx github:org/tool#f9e2b8d6a"
+command: "npx github:prettier/prettier@3.3.3"  # Tag references
 
-# NPM registry with exact versions can be vulnerable to supply chain attacks and should be avoided.
-command: "npx my-tool@1.2.3"
+# UVX with specific commits (Python tools)
+command: "uvx --from git+https://github.com/psf/black@24.4.2 black"
+command: "uvx --from git+https://github.com/astral-sh/ruff@v0.5.0 ruff"
 
 # Docker with tags or digests (digests preferred)
-command: "docker run my-tool:v1.0"
-command: "docker run my-tool@sha256:abc123..."
+command: "docker run node:20-alpine"
+command: "docker run node@sha256:abc123..."
 
 # URLs with version in path
 command: "curl https://example.com/api/v2/process"
@@ -694,11 +764,15 @@ const result = await client.call('execute-capability-by-id', {
 Begin with the minimal 3-field format and add features as needed.
 
 ### 2. Use Descriptive Names
-- ✅ `PDFToTextConverter`
-- ❌ `pdf2txt`
+- ✅ `MarkdownToHTMLConverter`
+- ❌ `md2html`
 
 ### 3. Pin Dependencies
-Always include version pins in your commands for reproducibility.
+Always include commit hashes in your commands for reproducibility:
+- ✅ `npx github:org/tool#abc123def`
+- ✅ `uvx --from git+https://github.com/org/tool@abc123`
+- ❌ `npx some-tool` (no version)
+- ❌ `npx some-tool@v1.2.3` (version tags can be moved)
 
 ### 4. Test Your Tools
 Include examples to verify behavior and document expected outputs.
@@ -720,6 +794,13 @@ Add relevant tags to help users find your tools:
 - ✅ `["text", "analysis", "sentiment"]` for sentiment analysis
 - ✅ `["image", "resize", "media"]` for image processing
 - ✅ `["data", "csv", "validation"]` for data tools
+
+### 9. Prefer Universal Tools
+Use tools that work across platforms without installation:
+- ✅ `npx github:...` (works everywhere with npm)
+- ✅ `uvx --from git+...` (works everywhere with Python)
+- ✅ `docker run ...` (requires Docker but platform-agnostic)
+- ❌ `pdftotext` (requires system package installation)
 
 ---
 
