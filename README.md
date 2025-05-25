@@ -43,8 +43,6 @@ Now any AI using MCP can discover and use your tool!
 
 ## Now in more detail
 
-**Enact** revolutionizes how AI tools are defined, packaged, and shared.
-
 Enact is a protocol that complements the [Model Context Protocol (MCP)](https://github.com/modelcontextprotocol) by providing a standardized way to define, package, discover, and secure AI tools.
 
 While MCP enables communication between AI models and tools, **Enact handles the complete lifecycle of those tools**—ensuring they are:
