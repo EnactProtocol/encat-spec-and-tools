@@ -136,6 +136,18 @@ inputSchema:
       type: string
       enum: ["json", "xml"]
   required: ["data"]
+
+# Output schema helps AI models understand tool responses
+outputSchema:
+  type: object
+  properties:
+    result:
+      type: string
+      description: "Processed data"
+    status:
+      type: string
+      enum: ["success", "error"]
+  required: ["result", "status"]
 ```
 
 **Level 3: Enterprise** (+ environment & signatures)
@@ -225,11 +237,12 @@ namespace: string    # Environment variable namespace (e.g., "tools.enact.discor
 version: string      # Tool definition version for tracking changes
 ```
 
-### Input Schema (JSON Schema)
+### Input & Output Schemas (JSON Schema)
 
-Tools use [JSON Schema](https://json-schema.org/) for input validation:
+Tools use [JSON Schema](https://json-schema.org/) for input validation and output documentation:
 
 ```yaml
+# Input validation (recommended for production tools)
 inputSchema:
   type: object
   properties:
@@ -245,6 +258,21 @@ inputSchema:
       minimum: 1
       maximum: 100
   required: ["text"]
+
+# Output schema (strongly recommended - helps AI models understand responses)
+outputSchema:
+  type: object
+  properties:
+    words:
+      type: integer
+      description: "Number of words found"
+    characters:
+      type: integer
+      description: "Number of characters found"
+    format:
+      type: string
+      description: "Output format used"
+  required: ["words", "characters"]
 ```
 
 ### Tool Behavior Annotations
@@ -375,12 +403,23 @@ inputSchema:
   required: ["text"]
 
 examples:
-  - input: {text: "I love this!"}
-    output: {sentiment: "positive", score: 0.98}
+  - input: {text: "hello world", format: "json"}
+    output: {words: 2, characters: 11}
+    description: "Basic word counting"
+  - input: {text: "one"}
+    output: {words: 1}
+    description: "Single word test"
 
-annotations:
-  readOnlyHint: true
-  idempotentHint: true
+outputSchema:
+  type: object
+  properties:
+    words:
+      type: integer
+      description: "Number of words found"
+    characters:
+      type: integer
+      description: "Number of characters found"
+  required: ["words"]
 ```
 
 ### Image Processing
@@ -658,6 +697,7 @@ command: string      # Shell command to execute with version pins (required)
 # RECOMMENDED FIELDS
 timeout: string      # Go duration format: "30s", "5m", "1h" (default: "30s")
 tags: [string]       # Tags for search and categorization
+outputSchema: object # Output structure as JSON Schema (strongly recommended)
 
 # OPTIONAL FIELDS
 namespace: string    # Environment variable namespace
@@ -682,8 +722,8 @@ env:
 ### Schema Definitions
 
 ```yaml
-inputSchema: object  # Input parameters as JSON Schema
-outputSchema: object # Output structure as JSON Schema (optional)
+inputSchema: object   # Input parameters as JSON Schema (recommended)
+outputSchema: object  # Output structure as JSON Schema (strongly recommended)
 ```
 
 ### Documentation and Testing
@@ -721,6 +761,7 @@ signature:           # Cryptographic signature (optional)
   signer: string     # Signer identifier (required)
   created: string    # ISO timestamp (required)
   value: string      # Base64 encoded signature (required)
+  role: string       # role is optional description of the signer.
 ```
 
 ### Extensions
