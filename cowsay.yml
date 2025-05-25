@@ -1,0 +1,27 @@
+enact: 1.0.0
+id: Cowsay
+description: Displays a message using ASCII art of a cow.
+version: 1.0.0
+type: npx
+input:
+  type: object
+  properties:
+    message:
+      type: string
+      description: The message the cow should say.
+      required: true
+    eyes:
+      type: string
+      description: Optional eyes for the cow (e.g., "oo", "XX").
+    tongue:
+      type: string
+      description: Optional tongue for the cow (e.g., "UU", "^^").
+  required:
+    - message
+package: cowsay
+args:
+  - "{{message}}"
+  - "--eyes"
+  - "{{eyes}}"
+  - "--tongue"
+  - "{{tongue}}"
