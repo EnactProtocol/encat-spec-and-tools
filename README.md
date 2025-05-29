@@ -822,6 +822,7 @@ outputSchema: object # Output structure as JSON Schema (strongly recommended)
 # OPTIONAL FIELDS
 namespace: string    # Environment variable namespace
 version: string      # Tool definition version for tracking changes
+enact: string        # Version of enact being used
 resources:           # Resource requirements
   memory: string     # System memory needed (e.g., "16Gi", "32Gi")
   gpu: string        # GPU memory needed (e.g., "24Gi", "48Gi")
