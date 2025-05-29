@@ -11,13 +11,13 @@
 Instead of writing code integrations, you define tools with simple YAML:
 
 ```yaml
-name: NasaMarkdownCrawler
-description: "Extracts markdown content from nasa website"
-command: "uvx --from git+https://github.com/paulpierre/markdown-crawler@d47cbd5 markdown-crawler https://www.nasa.gov/news/"
+  name: hello-world
+  description: "Greets the world"
+  command: "echo 'Hello, ${name}!'"
 ```
 
 That's it. This tool can now be:
-- 🔍 **Discovered** by AI models searching for "web scraping" or "markdown extraction"
+- 🔍 **Discovered** by AI models searching for "hello world" or "greeting"
 - 🚀 **Executed** safely without local installation
 - 🔐 **Verified** with cryptographic signatures
 - 📌 **Reproduced** exactly with commit hash pinning
@@ -62,9 +62,9 @@ While MCP enables communication between AI models and tools, **Enact handles the
 ### Your First Tool (3 lines!)
 
 ```yaml
-name: hello-world
-description: "Greets the world"
-command: "echo 'Hello, ${name}!'"
+name: NasaMarkdownCrawler
+description: "Extracts markdown content from nasa website"
+command: "uvx --from git+https://github.com/paulpierre/markdown-crawler@d47cbd5 markdown-crawler https://www.nasa.gov/news/"
 ```
 
 That's it! This tool can now be published, discovered, and used by any AI model.
