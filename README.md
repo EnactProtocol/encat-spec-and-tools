@@ -20,13 +20,13 @@ That's it. This tool can now be:
 - 🔍 **Discovered** by AI models searching for "hello world" or "greeting"
 - 🚀 **Executed** safely without local installation
 - 🔐 **Verified** with cryptographic signatures
-- 📌 **Reproduced** exactly with commit hash pinning
+- 📌 **Versioned** with standard semantic versioning
 
 **Why Enact?**
 - Any command-line tool becomes an AI tool
 - No coding required - just YAML
 - Built on the Model Context Protocol (MCP)
-- Secure by default with commit hashes and signatures
+- Secure by default with signatures and versioning
 
 **Get Started:**
 ```bash
@@ -51,7 +51,7 @@ While MCP enables communication between AI models and tools, **Enact handles the
 * 🌐 **Discoverable** — semantically searchable across registries
 * 📦 **Packaged** — defined in a consistent, executable format
 * 🔐 **Secure** — protected with cryptographic signatures and verification
-* 🕒 **Reproducible** — versioned with content pinning for reliability
+* 🕒 **Versioned** — using pinning or familiar semantic versioning for reliability
 
 > **Enact provides the standards for packaging, securing, and discovering tools**
 
@@ -64,7 +64,7 @@ While MCP enables communication between AI models and tools, **Enact handles the
 ```yaml
 name: NasaMarkdownCrawler
 description: "Extracts markdown content from nasa website"
-command: "uvx --from git+https://github.com/paulpierre/markdown-crawler@d47cbd5 markdown-crawler https://www.nasa.gov/news/"
+command: "uvx markdown-crawler@1.0.0 https://www.nasa.gov/news/"
 ```
 
 That's it! This tool can now be published, discovered, and used by any AI model.
@@ -74,7 +74,7 @@ That's it! This tool can now be published, discovered, and used by any AI model.
 ```yaml
 name: JSONFormatter
 description: "Formats and validates JSON data"
-command: "npx github:stedolan/jq@a7f6ab2c --raw-output '${filter}' <<< '${json}'"
+command: "npx jq-cli@1.7.1 --raw-output '${filter}' <<< '${json}'"
 timeout: "30s"
 
 # Input validation (JSON Schema)
@@ -121,32 +121,38 @@ resources: object    # Resource requirements
 
 ### Universal Command Execution
 
-Enact's superpower is its **command interface** executed through the Enact MCP Server. Any shell command works with version pinning for reproducibility:
+Enact's superpower is its **command interface** executed through the Enact MCP Server. Any shell command works:
 
 ```yaml
-# NPX with GitHub commit hashes (secure, immutable)
-command: "npx github:prettier/prettier#abc123 --write '${file}'"
-command: "npx github:eslint/eslint#def456 --fix '${file}'"
+# NPX with version tags (recommended)
+command: "npx prettier@3.3.3 --write '${file}'"
+command: "npx eslint@9.0.0 --fix '${file}'"
 
-# UVX with specific commits (Python tools)
-command: "uvx --from git+https://github.com/psf/black@abc123 black '${file}'"
-command: "uvx --from git+https://github.com/astral-sh/ruff@def456 ruff check '${file}'"
+# UVX for Python tools
+command: "uvx black@24.4.2 '${file}'"
+command: "uvx ruff@0.5.0 check '${file}'"
 
-# Docker with specific tags/digests  
-command: "docker run --rm pandoc/core:3.1.11 -f markdown -t html '${input}'"
-command: "docker run --rm pandoc/core@sha256:abc123... '${input}'"
+# Docker with specific tags
+command: "docker run pandoc/core:3.1.11 -f markdown -t html '${input}'"
 
-# HTTP APIs with version in URL
+# HTTP APIs with versioned endpoints
 command: "curl -s 'https://api.example.com/v1/process' -d '${json}'"
 
-# Shell pipelines with pinned tools
-command: "echo '${text}' | npx github:sindresorhus/slugify-cli#abc123"
+# Shell pipelines
+command: "echo '${text}' | npx slugify-cli@2.0.0"
 
-# Complex workflows with multiple tools
+# Complex workflows
 command: |
   echo "Processing ${input}" &&
-  uvx --from git+https://github.com/yaml/pyyaml@abc123 python -m yaml validate &&
-  npx github:prettier/prettier#def456 --write output.yaml
+  uvx pyyaml@6.0.1 validate &&
+  npx prettier@3.3.3 --write output.yaml
+```
+
+**For maximum reproducibility**, you can also use commit hashes:
+```yaml
+# Using commit hashes for absolute immutability
+command: "npx github:prettier/prettier#abc123def --write '${file}'"
+command: "uvx --from git+https://github.com/psf/black@d47cbd5 black '${file}'"
 ```
 
 ### Progressive Complexity
@@ -157,14 +163,15 @@ Start simple, add features as needed:
 ```yaml
 name: SlugifyText
 description: "Converts text to URL-friendly slugs"
-command: "npx github:sindresorhus/slugify-cli@b4a8c2d9f '${text}'"
+command: "npx slugify-cli@2.0.0 '${text}'"
 ```
 
 **Level 2: Production-Ready** (+ validation & metadata)
 ```yaml
+enact: "1.0.0"
 name: MarkdownToHTML
 description: "Converts markdown to HTML with syntax highlighting"
-command: "npx github:markdown-it/markdown-it-cli@abc123 -o '${output}' '${input}'"
+command: "npx markdown-it@14.0.0 -o '${output}' '${input}'"
 timeout: "30s"
 tags: ["markdown", "html", "converter", "documentation"]
 
@@ -195,9 +202,10 @@ outputSchema:
 
 **Level 3: Enterprise** (+ environment & signatures)
 ```yaml
+enact: 1.0.0
 name: OpenAICodeReview
 description: "Reviews code using OpenAI's API"
-command: "uvx --from git+https://github.com/openai/openai-python@abc123 python -m openai.cli review --file='${file}' --model='${model}'"
+command: "uvx openai-cli@1.0.0 review --file='${file}' --model='${model}'"
 timeout: "2m"
 tags: ["ai", "code-review", "openai", "analysis"]
 namespace: "tools.enact.openai"
@@ -254,7 +262,7 @@ MCP defines [tools](https://modelcontextprotocol.io/docs/concepts/tools) with a 
 | Tool Execution | ❌ Server implementation required | ✅ Command-based execution via Enact MCP Server |
 | Tool Discovery | ❌ | ✅ Semantic search & registry |
 | Tool Packaging | ❌ | ✅ Standard YAML schema |
-| Versioning & Reproducibility | ❌ | ✅ Version pinning in commands |
+| Versioning | ❌ | ✅ Semantic versioning support |
 | Security & Verification | ❌ | ✅ Cryptographic signatures |
 | Environment Management | ❌ | ✅ Namespace isolation |
 
@@ -267,7 +275,7 @@ MCP defines [tools](https://modelcontextprotocol.io/docs/concepts/tools) with a 
 ```yaml
 name: string         # Tool identifier (must be unique)
 description: string  # Human-readable description of what the tool does
-command: string      # Shell command to execute (with version pins recommended)
+command: string      # Shell command to execute (with versions or hash pins recommended)
 ```
 
 ### Recommended Fields
@@ -437,7 +445,7 @@ flowchart TB
 ```yaml
 name: TextStatistics
 description: "Analyzes text statistics and readability"
-command: "npx github:sindresorhus/text-stats-cli#abc123 '${text}'"
+command: "npx text-stats-cli@1.0.0 '${text}'"
 timeout: "30s"
 tags: ["text", "analysis", "statistics", "readability"]
 
@@ -481,7 +489,7 @@ outputSchema:
 ```yaml
 name: PrettierFormatter
 description: "Formats code using Prettier"
-command: "npx github:prettier/prettier@3.3.3 --write '${file}' --config '${config}'"
+command: "npx prettier@3.3.3 --write '${file}' --config '${config}'"
 timeout: "1m"
 tags: ["code", "formatter", "prettier", "javascript", "typescript"]
 
@@ -505,7 +513,7 @@ annotations:
 ```yaml
 name: JSONSchemaValidator
 description: "Validates JSON against a schema"
-command: "npx github:ajv-validator/ajv-cli@v5.0.0 validate -s '${schema}' -d '${data}'"
+command: "npx ajv-cli@5.0.0 validate -s '${schema}' -d '${data}'"
 timeout: "30s"
 tags: ["json", "validation", "schema", "data"]
 
@@ -537,7 +545,7 @@ outputSchema:
 ```yaml
 name: WebContentExtractor
 description: "Extracts content from web pages as markdown"
-command: "uvx --from git+https://github.com/paulpierre/markdown-crawler@d47cbd5 markdown-crawler '${url}' --depth='${depth}'"
+command: "uvx markdown-crawler@2.1.0 '${url}' --depth='${depth}'"
 timeout: "2m"
 tags: ["web", "scraping", "markdown", "content", "extraction"]
 
@@ -583,11 +591,12 @@ inputSchema:
       description: "Validation schema URL"
   required: ["file"]
 ```
+
 ### Video Processing
 ```yaml
 name: VideoTranscoder
 description: "Transcodes videos using GPU acceleration"
-command: "docker run --gpus all video-tools@sha256:d9c8e2f7a... transcode --input='${input}' --output='${output}' --format='${format}'"
+command: "docker run --gpus all video-tools:2.5.0 transcode --input='${input}' --output='${output}' --format='${format}'"
 timeout: "30m"
 tags: ["video", "media", "transcoding", "gpu"]
 
@@ -619,7 +628,7 @@ annotations:
 ```yaml
 name: HTTPTester
 description: "Tests HTTP endpoints"
-command: "npx github:sindresorhus/got-cli@v3.0.0 '${url}' --method='${method}' --headers='${headers}' --body='${body}'"
+command: "npx got-cli@3.0.0 '${url}' --method='${method}' --headers='${headers}' --body='${body}'"
 timeout: "30s"
 tags: ["api", "http", "testing", "rest"]
 
@@ -652,26 +661,30 @@ annotations:
 
 ## 🔐 Security
 
-### Version Pinning
+### Versioning Best Practices
 
-Always pin tool versions directly in commands for reproducibility:
+Enact supports multiple versioning strategies to balance convenience and security:
 
 ```yaml
-# NPX with GitHub - use commit hashes (9+ chars recommended)
-command: "npx github:org/tool#abc123def"
-command: "npx github:prettier/prettier@3.3.3"  # Tag references
-
-# UVX with specific commits (Python tools)
-command: "uvx --from git+https://github.com/psf/black@24.4.2 black"
-command: "uvx --from git+https://github.com/astral-sh/ruff@v0.5.0 ruff"
-
-# Docker with tags or digests (digests preferred)
+# Standard version tags (recommended for most tools)
+command: "npx prettier@3.3.3"
+command: "uvx black@24.4.2"
 command: "docker run node:20-alpine"
-command: "docker run node@sha256:abc123..."
 
-# URLs with version in path
-command: "curl https://example.com/api/v2/process"
+# Version ranges for flexibility
+command: "npx eslint@^9.0.0"  # Compatible with 9.x.x
+command: "uvx ruff@~0.5.0"    # Compatible with 0.5.x
+
+# Commit hashes for maximum reproducibility
+command: "npx github:prettier/prettier#abc123def"
+command: "uvx --from git+https://github.com/psf/black@d47cbd5 black"
+command: "docker run node@sha256:abc123..."
 ```
+
+**Recommendations:**
+- Use **exact versions** (`@1.2.3`) for production tools
+- Use **version ranges** (`@^1.2.0`) for development tools
+- Use **commit hashes** for security-critical applications
 
 ### Cryptographic Signatures
 
@@ -767,12 +780,15 @@ Begin with the minimal 3-field format and add features as needed.
 - ✅ `MarkdownToHTMLConverter`
 - ❌ `md2html`
 
-### 3. Pin Dependencies
-Always include commit hashes in your commands for reproducibility:
-- ✅ `npx github:org/tool#abc123def`
-- ✅ `uvx --from git+https://github.com/org/tool@abc123`
-- ❌ `npx some-tool` (no version)
-- ❌ `npx some-tool@v1.2.3` (version tags can be moved)
+### 3. Version Your Dependencies
+Always specify versions in your commands:
+- ✅ `npx prettier@3.3.3`
+- ✅ `uvx black@24.4.2`
+- ❌ `npx prettier` (no version)
+
+For maximum security, you can use commit hashes:
+- `npx github:org/tool#abc123def`
+- `uvx --from git+https://github.com/org/tool@abc123`
 
 ### 4. Test Your Tools
 Include examples to verify behavior and document expected outputs.
@@ -797,9 +813,9 @@ Add relevant tags to help users find your tools:
 
 ### 9. Prefer Universal Tools
 Use tools that work across platforms without installation:
-- ✅ `npx github:...` (works everywhere with npm)
-- ✅ `uvx --from git+...` (works everywhere with Python)
-- ✅ `docker run ...` (requires Docker but platform-agnostic)
+- ✅ `npx package@version` (works everywhere with npm)
+- ✅ `uvx package@version` (works everywhere with Python)
+- ✅ `docker run image:tag` (requires Docker but platform-agnostic)
 - ❌ `pdftotext` (requires system package installation)
 
 ---
@@ -812,7 +828,7 @@ Use tools that work across platforms without installation:
 # REQUIRED FIELDS
 name: string         # Tool identifier (required)
 description: string  # Human-readable description (required)
-command: string      # Shell command to execute with version pins (required)
+command: string      # Shell command to execute with versions (required)
 
 # RECOMMENDED FIELDS
 timeout: string      # Go duration format: "30s", "5m", "1h" (default: "30s")
