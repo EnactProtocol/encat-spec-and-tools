@@ -62,7 +62,7 @@ While MCP enables communication between AI models and tools, **Enact handles the
 ### Your First Tool (3 lines!)
 
 ```yaml
-name: NasaMarkdownCrawler
+name: enact/nasa/markdown-crawler
 description: "Extracts markdown content from nasa website"
 command: "uvx markdown-crawler@1.0.0 https://www.nasa.gov/news/"
 ```
@@ -72,7 +72,7 @@ That's it! This tool can now be published, discovered, and used by any AI model.
 ### A More Complete Example
 
 ```yaml
-name: JSONFormatter
+name: enact/json/formatter
 description: "Formats and validates JSON data"
 command: "npx jq-cli@1.7.1 --raw-output '${filter}' <<< '${json}'"
 timeout: "30s"
@@ -104,7 +104,7 @@ examples:
 
 ```yaml
 # REQUIRED (minimum viable tool)
-name: string         # Tool identifier
+name: string         # Tool identifier with hierarchical path
 description: string  # What the tool does  
 command: string      # Shell command to execute
 
@@ -113,11 +113,35 @@ timeout: string      # Execution timeout (Go duration format)
 tags: [string]       # Search and categorization tags
 
 # OPTIONAL (advanced features)
-namespace: string    # Environment variable namespace
 inputSchema: object  # JSON Schema for input validation
 signature: object    # Cryptographic signature
 resources: object    # Resource requirements
 ```
+
+### Hierarchical Tool Names
+
+Enact uses filepath-style naming for natural organization:
+
+```yaml
+# Official Enact tools
+name: enact/text/analyzer
+name: enact/discord/bot-maker
+name: enact/web/scraper
+
+# Organization tools
+name: acme-corp/analytics/processor
+name: github/actions/deployer
+
+# Personal tools
+name: johndoe/utils/file-converter
+name: janedoe/ai/prompt-optimizer
+```
+
+**Benefits:**
+- **Natural Discovery**: Search `enact/discord` for all Discord tools
+- **Clear Ownership**: Registry enforces prefix permissions
+- **Simple Organization**: Familiar filesystem-like hierarchy
+- **No Namespace Conflicts**: Full path ensures uniqueness
 
 ### Universal Command Execution
 
@@ -161,7 +185,7 @@ Start simple, add features as needed:
 
 **Level 1: Minimal** (3 required fields)
 ```yaml
-name: SlugifyText
+name: enact/text/slugify
 description: "Converts text to URL-friendly slugs"
 command: "npx slugify-cli@2.0.0 '${text}'"
 ```
@@ -169,7 +193,7 @@ command: "npx slugify-cli@2.0.0 '${text}'"
 **Level 2: Production-Ready** (+ validation & metadata)
 ```yaml
 enact: "1.0.0"
-name: MarkdownToHTML
+name: enact/markdown/to-html
 description: "Converts markdown to HTML with syntax highlighting"
 command: "npx markdown-it@14.0.0 -o '${output}' '${input}'"
 timeout: "30s"
@@ -203,12 +227,11 @@ outputSchema:
 **Level 3: Enterprise** (+ environment & signatures)
 ```yaml
 enact: 1.0.0
-name: OpenAICodeReview
+name: acme-corp/ai/code-review
 description: "Reviews code using OpenAI's API"
 command: "uvx openai-cli@1.0.0 review --file='${file}' --model='${model}'"
 timeout: "2m"
 tags: ["ai", "code-review", "openai", "analysis"]
-namespace: "tools.enact.openai"
 
 env:
   OPENAI_API_KEY:
@@ -264,7 +287,7 @@ MCP defines [tools](https://modelcontextprotocol.io/docs/concepts/tools) with a 
 | Tool Packaging | ❌ | ✅ Standard YAML schema |
 | Versioning | ❌ | ✅ Semantic versioning support |
 | Security & Verification | ❌ | ✅ Cryptographic signatures |
-| Environment Management | ❌ | ✅ Namespace isolation |
+| Environment Management | ❌ | ✅ Isolated execution environments |
 
 ---
 
@@ -273,7 +296,7 @@ MCP defines [tools](https://modelcontextprotocol.io/docs/concepts/tools) with a 
 ### Required Fields
 
 ```yaml
-name: string         # Tool identifier (must be unique)
+name: string         # Tool identifier with hierarchical path (must be unique in registry)
 description: string  # Human-readable description of what the tool does
 command: string      # Shell command to execute (with versions or hash pins recommended)
 ```
@@ -288,7 +311,6 @@ tags: [string]       # Tags for search and categorization
 ### Optional Fields
 
 ```yaml
-namespace: string    # Environment variable namespace (e.g., "tools.enact.discord")
 version: string      # Tool definition version for tracking changes
 ```
 
@@ -343,11 +365,11 @@ annotations:
 
 ### Environment Variables
 
-Environment variables use detailed object syntax for security and documentation:
+Environment variables are stored based on the tool's hierarchical name:
 
 ```yaml
-# Define tool namespace
-namespace: "tools.enact.discord"
+# Tool name determines storage location
+name: "acme-corp/discord/bot-maker"
 
 # Declare required environment variables
 env:
@@ -369,15 +391,15 @@ env:
 ```bash
 ~/.enact/
 └── env/
-    └── tools/
-        └── enact/
-            └── discord/
+    └── acme-corp/
+        └── discord/
+            └── bot-maker/
                 ├── .env          # User's actual secrets
                 └── .env.example  # Template from tool
 ```
 
 **Security Model:**
-- Each tool execution reads ONLY from its namespace directory
+- Each tool execution reads ONLY from its specific directory
 - No access to parent process environment
 - Secrets stored in `.env` files (use OS file permissions)
 - Simple security model to start, will enhance over time
@@ -443,7 +465,7 @@ flowchart TB
 
 ### Text Analysis
 ```yaml
-name: TextStatistics
+name: enact/text/statistics
 description: "Analyzes text statistics and readability"
 command: "npx text-stats-cli@1.0.0 '${text}'"
 timeout: "30s"
@@ -487,7 +509,7 @@ outputSchema:
 
 ### Code Formatting
 ```yaml
-name: PrettierFormatter
+name: enact/code/prettier
 description: "Formats code using Prettier"
 command: "npx prettier@3.3.3 --write '${file}' --config '${config}'"
 timeout: "1m"
@@ -511,7 +533,7 @@ annotations:
 
 ### Data Validation
 ```yaml
-name: JSONSchemaValidator
+name: enact/data/json-validator
 description: "Validates JSON against a schema"
 command: "npx ajv-cli@5.0.0 validate -s '${schema}' -d '${data}'"
 timeout: "30s"
@@ -543,7 +565,7 @@ outputSchema:
 
 ### Web Scraping
 ```yaml
-name: WebContentExtractor
+name: enact/web/content-extractor
 description: "Extracts content from web pages as markdown"
 command: "uvx markdown-crawler@2.1.0 '${url}' --depth='${depth}'"
 timeout: "2m"
@@ -571,7 +593,7 @@ annotations:
 
 ### Data Pipeline
 ```yaml
-name: CSVProcessor
+name: acme-corp/data/csv-processor
 description: "Validates and transforms CSV data"
 command: |
   enact exec csv-validator --file='${file}' --schema='${schema}' &&
@@ -594,7 +616,7 @@ inputSchema:
 
 ### Video Processing
 ```yaml
-name: VideoTranscoder
+name: media-tools/video/transcoder
 description: "Transcodes videos using GPU acceleration"
 command: "docker run --gpus all video-tools:2.5.0 transcode --input='${input}' --output='${output}' --format='${format}'"
 timeout: "30m"
@@ -626,7 +648,7 @@ annotations:
 
 ### API Testing
 ```yaml
-name: HTTPTester
+name: enact/http/tester
 description: "Tests HTTP endpoints"
 command: "npx got-cli@3.0.0 '${url}' --method='${method}' --headers='${headers}' --body='${body}'"
 timeout: "30s"
@@ -776,9 +798,12 @@ const result = await client.call('execute-capability-by-id', {
 ### 1. Start Simple
 Begin with the minimal 3-field format and add features as needed.
 
-### 2. Use Descriptive Names
-- ✅ `MarkdownToHTMLConverter`
+### 2. Use Hierarchical Names
+Choose clear, descriptive paths that indicate purpose and ownership:
+- ✅ `enact/markdown/to-html-converter`
+- ✅ `acme-corp/analytics/revenue-processor`
 - ❌ `md2html`
+- ❌ `tool123`
 
 ### 3. Version Your Dependencies
 Always specify versions in your commands:
@@ -793,11 +818,12 @@ For maximum security, you can use commit hashes:
 ### 4. Test Your Tools
 Include examples to verify behavior and document expected outputs.
 
-### 5. Use Namespaces for Environment Variables
-Group related tools and prevent variable conflicts:
-- `tools.enact.discord` for Discord tools
-- `tools.company.analytics` for company analytics tools
-- `tools.personal.utils` for personal utilities
+### 5. Organize by Purpose
+Use logical hierarchies for better discovery:
+- `enact/text/*` for text processing tools
+- `enact/web/*` for web-related tools
+- `company/internal/*` for internal company tools
+- `username/personal/*` for personal utilities
 
 ### 6. Document Behavior with Annotations
 Use `readOnlyHint`, `idempotentHint`, `destructiveHint`, and `openWorldHint` to help AI models understand tool behavior.
@@ -826,7 +852,7 @@ Use tools that work across platforms without installation:
 
 ```yaml
 # REQUIRED FIELDS
-name: string         # Tool identifier (required)
+name: string         # Tool identifier with hierarchical path (required)
 description: string  # Human-readable description (required)
 command: string      # Shell command to execute with versions (required)
 
@@ -836,7 +862,6 @@ tags: [string]       # Tags for search and categorization
 outputSchema: object # Output structure as JSON Schema (strongly recommended)
 
 # OPTIONAL FIELDS
-namespace: string    # Environment variable namespace
 version: string      # Tool definition version for tracking changes
 enact: string        # Version of enact being used
 resources:           # Resource requirements
@@ -919,7 +944,7 @@ x-*: any             # Custom extensions (must begin with 'x-')
 
 **Next (Beta)**
 - 🔄 Enhanced CLI with testing
-- 🔄 Public registry launch
+- 🔄 Public registry launch at enact.tools
 - 🔄 Advanced security features
 - 🔄 Performance optimizations
 
@@ -937,8 +962,8 @@ Join our growing community:
 
 - 💬 [Discord](https://discord.gg/mMfxvMtHyS) - Chat with developers
 - 🐛 [GitHub Issues](https://github.com/EnactProtocol/enact) - Report bugs
-- 📖 [Documentation](https://docs.enact.tools) - Full reference
-- 🌟 [Registry](https://enact.tools) - Browse tools
+- 📖 [Protocol Site](https://enactprotocol.com) - Full specification
+- 🌟 [Tool Registry](https://enact.tools) - Browse and publish tools (WIP)
 
 ---
 
