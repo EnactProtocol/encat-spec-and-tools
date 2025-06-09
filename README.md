@@ -111,6 +111,7 @@ command: string      # Shell command to execute
 # RECOMMENDED (production best practices)
 timeout: string      # Execution timeout (Go duration format)
 tags: [string]       # Search and categorization tags
+license: string      # SPDX License identifier
 
 # OPTIONAL (advanced features)
 inputSchema: object  # JSON Schema for input validation
@@ -198,6 +199,7 @@ description: "Converts markdown to HTML with syntax highlighting"
 command: "npx markdown-it@14.0.0 -o '${output}' '${input}'"
 timeout: "30s"
 tags: ["markdown", "html", "converter", "documentation"]
+license: "MIT"
 
 inputSchema:
   type: object
@@ -232,6 +234,7 @@ description: "Reviews code using OpenAI's API"
 command: "uvx openai-cli@1.0.0 review --file='${file}' --model='${model}'"
 timeout: "2m"
 tags: ["ai", "code-review", "openai", "analysis"]
+license: "Apache-2.0"
 
 env:
   OPENAI_API_KEY:
@@ -306,6 +309,7 @@ command: string      # Shell command to execute (with versions or hash pins reco
 ```yaml
 timeout: string      # Execution timeout in Go duration format: "30s", "5m", "1h" (default: "30s")
 tags: [string]       # Tags for search and categorization
+license: string      # SPDX License identifier (e.g., "MIT", "Apache-2.0", "GPL-3.0")
 ```
 
 ### Optional Fields
@@ -470,6 +474,7 @@ description: "Analyzes text statistics and readability"
 command: "npx text-stats-cli@1.0.0 '${text}'"
 timeout: "30s"
 tags: ["text", "analysis", "statistics", "readability"]
+license: "MIT"
 
 inputSchema:
   type: object
@@ -514,6 +519,7 @@ description: "Formats code using Prettier"
 command: "npx prettier@3.3.3 --write '${file}' --config '${config}'"
 timeout: "1m"
 tags: ["code", "formatter", "prettier", "javascript", "typescript"]
+license: "MIT"
 
 inputSchema:
   type: object
@@ -538,6 +544,7 @@ description: "Validates JSON against a schema"
 command: "npx ajv-cli@5.0.0 validate -s '${schema}' -d '${data}'"
 timeout: "30s"
 tags: ["json", "validation", "schema", "data"]
+license: "Apache-2.0"
 
 inputSchema:
   type: object
@@ -570,6 +577,7 @@ description: "Extracts content from web pages as markdown"
 command: "uvx markdown-crawler@2.1.0 '${url}' --depth='${depth}'"
 timeout: "2m"
 tags: ["web", "scraping", "markdown", "content", "extraction"]
+license: "BSD-3-Clause"
 
 inputSchema:
   type: object
@@ -600,6 +608,7 @@ command: |
   enact exec csv-transformer --file='${file}' --output=processed.csv
 timeout: "5m"
 tags: ["data", "csv", "validation", "etl", "pipeline"]
+license: "GPL-3.0"
 
 inputSchema:
   type: object
@@ -621,6 +630,7 @@ description: "Transcodes videos using GPU acceleration"
 command: "docker run --gpus all video-tools:2.5.0 transcode --input='${input}' --output='${output}' --format='${format}'"
 timeout: "30m"
 tags: ["video", "media", "transcoding", "gpu"]
+license: "LGPL-2.1"
 
 resources:
   memory: "16Gi"
@@ -653,6 +663,7 @@ description: "Tests HTTP endpoints"
 command: "npx got-cli@3.0.0 '${url}' --method='${method}' --headers='${headers}' --body='${body}'"
 timeout: "30s"
 tags: ["api", "http", "testing", "rest"]
+license: "MIT"
 
 inputSchema:
   type: object
@@ -815,29 +826,37 @@ For maximum security, you can use commit hashes:
 - `npx github:org/tool#abc123def`
 - `uvx --from git+https://github.com/org/tool@abc123`
 
-### 4. Test Your Tools
+### 4. Specify License
+Always include a license field using SPDX identifiers:
+- ✅ `license: "MIT"`
+- ✅ `license: "Apache-2.0"`
+- ✅ `license: "GPL-3.0"`
+- ✅ `license: "BSD-3-Clause"`
+- ❌ `license: "MIT License"` (use SPDX identifier)
+
+### 5. Test Your Tools
 Include examples to verify behavior and document expected outputs.
 
-### 5. Organize by Purpose
+### 6. Organize by Purpose
 Use logical hierarchies for better discovery:
 - `enact/text/*` for text processing tools
 - `enact/web/*` for web-related tools
 - `company/internal/*` for internal company tools
 - `username/personal/*` for personal utilities
 
-### 6. Document Behavior with Annotations
+### 7. Document Behavior with Annotations
 Use `readOnlyHint`, `idempotentHint`, `destructiveHint`, and `openWorldHint` to help AI models understand tool behavior.
 
-### 7. Set Appropriate Timeouts
+### 8. Set Appropriate Timeouts
 Use Go duration format: `"30s"`, `"5m"`, `"1h"`. Match timeout values to expected execution time.
 
-### 8. Use Tags for Better Discovery
+### 9. Use Tags for Better Discovery
 Add relevant tags to help users find your tools:
 - ✅ `["text", "analysis", "sentiment"]` for sentiment analysis
 - ✅ `["image", "resize", "media"]` for image processing
 - ✅ `["data", "csv", "validation"]` for data tools
 
-### 9. Prefer Universal Tools
+### 10. Prefer Universal Tools
 Use tools that work across platforms without installation:
 - ✅ `npx package@version` (works everywhere with npm)
 - ✅ `uvx package@version` (works everywhere with Python)
@@ -859,6 +878,7 @@ command: string      # Shell command to execute with versions (required)
 # RECOMMENDED FIELDS
 timeout: string      # Go duration format: "30s", "5m", "1h" (default: "30s")
 tags: [string]       # Tags for search and categorization
+license: string      # SPDX License identifier (e.g., "MIT", "Apache-2.0", "GPL-3.0")
 outputSchema: object # Output structure as JSON Schema (strongly recommended)
 
 # OPTIONAL FIELDS
