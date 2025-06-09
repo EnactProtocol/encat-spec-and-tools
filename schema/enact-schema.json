@@ -2,45 +2,11 @@
     "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "Enact Protocol Schema",
     "description": "Schema for validating Enact tool YAML files",
-    "definitions": {
-        "jsonSchema": {
-            "$ref": "http://json-schema.org/draft-07/schema#"
-        },
-        "annotationType": {
-            "type": "object",
-            "description": "MCP-aligned annotations for tool behavior",
-            "properties": {
-                "title": {
-                    "type": "string",
-                    "description": "Human-friendly display name for the tool"
-                },
-                "readOnlyHint": {
-                    "type": "boolean",
-                    "description": "Indicates if the tool only reads data without side effects"
-                },
-                "destructiveHint": {
-                    "type": "boolean",
-                    "description": "Indicates if the tool might make irreversible changes"
-                },
-                "idempotentHint": {
-                    "type": "boolean",
-                    "description": "Indicates if calling the tool multiple times with the same input has the same effect as calling it once"
-                },
-                "openWorldHint": {
-                    "type": "boolean",
-                    "description": "Indicates if the tool interacts with a dynamic external environment"
-                }
-            }
-        }
-    },
     "type": "object",
     "required": [
-        "enact",
         "name",
         "description",
-        "type",
-        "source",
-        "inputSchema"
+        "command"
     ],
     "properties": {
         "enact": {
@@ -50,190 +16,203 @@
         },
         "name": {
             "type": "string",
-            "description": "Unique identifier for the tool"
+            "description": "Tool identifier with hierarchical path (must be unique in registry)",
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9-_]*(\/[a-zA-Z0-9][a-zA-Z0-9-_]*)*$",
+            "examples": [
+                "enact/text/analyzer",
+                "acme-corp/analytics/processor",
+                "johndoe/utils/file-converter"
+            ]
         },
         "description": {
             "type": "string",
-            "description": "Human-readable description of the tool"
+            "description": "Human-readable description of what the tool does"
+        },
+        "command": {
+            "type": "string",
+            "description": "Shell command to execute (with versions or hash pins recommended)",
+            "examples": [
+                "npx prettier@3.3.3 --write '${file}'",
+                "uvx black@24.4.2 '${file}'",
+                "docker run pandoc/core:3.1.11 -f markdown -t html '${input}'",
+                "curl -s 'https://api.example.com/v1/process' -d '${json}'"
+            ]
         },
         "version": {
             "type": "string",
-            "description": "Semantic version of the tool itself",
+            "description": "Tool definition version for tracking changes",
             "pattern": "^\\d+\\.\\d+\\.\\d+$"
         },
-        "type": {
+        "timeout": {
             "type": "string",
-            "description": "Execution type that defines how the tool is executed",
-            "enum": [
-                "npx",
-                "mcp",
-                "docker",
-                "wasm",
-                "http",
-                "js"
+            "description": "Execution timeout in Go duration format",
+            "pattern": "^[0-9]+(ns|us|µs|ms|s|m|h)$",
+            "default": "30s",
+            "examples": [
+                "30s",
+                "5m",
+                "1h",
+                "2m30s"
             ]
         },
-        "source": {
-            "type": "string",
-            "description": "Identifier for the tool's executable code or endpoint"
-        },
-        "commit": {
-            "type": "string",
-            "description": "Specific commit hash for version pinning"
-        },
-        "doc": {
-            "type": "string",
-            "description": "Optional documentation in Markdown format"
-        },
-        "authors": {
+        "tags": {
             "type": "array",
-            "description": "List of authors",
+            "description": "Tags for search and categorization",
             "items": {
-                "type": "object",
-                "required": [
-                    "name"
+                "type": "string"
+            },
+            "examples": [
+                [
+                    "text",
+                    "analysis",
+                    "sentiment"
                 ],
-                "properties": {
-                    "name": {
-                        "type": "string",
-                        "description": "Author's name"
-                    },
-                    "email": {
-                        "type": "string",
-                        "description": "Author's email address",
-                        "format": "email"
-                    },
-                    "url": {
-                        "type": "string",
-                        "description": "Author's URL",
-                        "format": "uri"
-                    }
-                }
-            }
+                [
+                    "markdown",
+                    "html",
+                    "converter",
+                    "documentation"
+                ]
+            ]
         },
-        "dependencies": {
-            "type": "object",
-            "description": "Runtime dependencies for the tool",
-            "properties": {
-                "packages": {
-                    "type": "array",
-                    "description": "Required packages",
-                    "items": {
-                        "type": "string",
-                        "description": "Package name with optional version specifier"
-                    }
-                }
-            }
+        "license": {
+            "type": "string",
+            "description": "SPDX License identifier",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9.-]*[A-Za-z0-9]$|^[A-Za-z0-9]$",
+            "examples": [
+                "MIT",
+                "Apache-2.0",
+                "GPL-3.0",
+                "BSD-3-Clause",
+                "ISC",
+                "LGPL-2.1",
+                "Unlicense"
+            ]
         },
         "inputSchema": {
-            "$ref": "#/definitions/jsonSchema",
-            "description": "Input parameters for the tool (JSON Schema)"
+            "$ref": "http://json-schema.org/draft-07/schema#",
+            "description": "Input validation (JSON Schema)"
         },
         "outputSchema": {
-            "$ref": "#/definitions/jsonSchema",
-            "description": "Output parameters for the tool (JSON Schema)"
+            "$ref": "http://json-schema.org/draft-07/schema#",
+            "description": "Output structure (JSON Schema) - strongly recommended"
         },
-        "run": {
+        "annotations": {
             "type": "object",
-            "description": "Execution configuration",
+            "description": "MCP-aligned behavior hints (all default to false)",
             "properties": {
-                "args": {
-                    "type": "array",
-                    "description": "Command arguments for NPX or Docker execution types",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "tool": {
+                "title": {
                     "type": "string",
-                    "description": "Target tool name for MCP execution type"
+                    "description": "Human-readable display name (optional)"
                 },
-                "method": {
-                    "type": "string",
-                    "description": "HTTP method for HTTP execution type",
-                    "enum": [
-                        "GET",
-                        "POST",
-                        "PUT",
-                        "DELETE",
-                        "PATCH"
-                    ]
+                "readOnlyHint": {
+                    "type": "boolean",
+                    "description": "Tool doesn't modify the system",
+                    "default": false
                 },
-                "urlTemplate": {
-                    "type": "string",
-                    "description": "URL template for HTTP execution type"
+                "idempotentHint": {
+                    "type": "boolean",
+                    "description": "Multiple calls produce same result as single call",
+                    "default": false
                 },
-                "headers": {
-                    "type": "object",
-                    "description": "HTTP headers for HTTP execution type"
+                "destructiveHint": {
+                    "type": "boolean",
+                    "description": "Tool may make permanent/irreversible changes",
+                    "default": false
                 },
-                "bodyTemplate": {
-                    "type": "object",
-                    "description": "Request body template for HTTP execution type"
-                },
-                "timeout": {
-                    "type": "number",
-                    "description": "Maximum execution time in milliseconds"
+                "openWorldHint": {
+                    "type": "boolean",
+                    "description": "Tool connects to external systems/internet",
+                    "default": false
                 }
             },
-            "oneOf": [
-                {
-                    "required": [
-                        "args"
-                    ]
-                },
-                {
-                    "required": [
-                        "tool"
-                    ]
-                },
-                {
-                    "required": [
-                        "method",
-                        "urlTemplate"
-                    ]
-                }
-            ]
+            "additionalProperties": false
         },
         "env": {
             "type": "object",
-            "description": "Environment configuration and resource requirements",
-            "properties": {
-                "vars": {
+            "description": "Environment variables declaration",
+            "patternProperties": {
+                "^[A-Z_][A-Z0-9_]*$": {
                     "type": "object",
-                    "description": "Environment variables (treated as secrets by default)"
-                },
-                "resources": {
-                    "type": "object",
-                    "description": "Resource requirements for execution",
+                    "required": [
+                        "description",
+                        "required"
+                    ],
                     "properties": {
-                        "memory": {
+                        "description": {
                             "type": "string",
-                            "description": "Required memory allocation"
+                            "description": "What this variable is for"
                         },
-                        "timeout": {
+                        "source": {
                             "type": "string",
-                            "description": "Maximum execution time"
+                            "description": "Where to get this value"
+                        },
+                        "required": {
+                            "type": "boolean",
+                            "description": "Whether this is required"
+                        },
+                        "default": {
+                            "type": "string",
+                            "description": "Default value if not set"
                         }
-                    }
+                    },
+                    "additionalProperties": false
                 }
+            },
+            "additionalProperties": false
+        },
+        "examples": {
+            "type": "array",
+            "description": "Test cases and expected outputs",
+            "items": {
+                "type": "object",
+                "required": [
+                    "input"
+                ],
+                "properties": {
+                    "input": {
+                        "type": "object",
+                        "description": "Input parameters"
+                    },
+                    "output": {
+                        "description": "Expected output (any type)"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Test description"
+                    }
+                },
+                "additionalProperties": false
             }
         },
         "signature": {
             "type": "object",
-            "description": "Cryptographic signature to verify authenticity and integrity",
+            "description": "Cryptographic signature for authenticity verification",
             "required": [
-                "value",
-                "signer"
+                "algorithm",
+                "signer",
+                "type",
+                "created",
+                "value"
             ],
             "properties": {
                 "algorithm": {
                     "type": "string",
-                    "description": "Hashing algorithm used (e.g., sha256)"
+                    "description": "Hash algorithm",
+                    "enum": [
+                        "sha256"
+                    ]
+                },
+                "signer": {
+                    "type": "string",
+                    "description": "Signer identifier"
                 },
                 "type": {
                     "type": "string",
-                    "description": "Signature algorithm and curve (e.g., ecdsa-p256)"
+                    "description": "Signature type",
+                    "enum": [
+                        "ecdsa-p256"
+                    ]
                 },
                 "created": {
                     "type": "string",
@@ -242,47 +221,85 @@
                 },
                 "value": {
                     "type": "string",
-                    "description": "Cryptographic signature of the canonical tool definition"
+                    "description": "Base64 encoded signature"
                 },
-                "signer": {
+                "role": {
                     "type": "string",
-                    "description": "Identifier of the key or entity that signed the tool"
+                    "description": "Optional description of the signer"
                 }
-            }
+            },
+            "additionalProperties": false
         },
-        "annotations": {
-            "$ref": "#/definitions/annotationType",
-            "description": "MCP-aligned annotations providing hints to AI agents"
-        },
-        "config": {
+        "resources": {
             "type": "object",
-            "description": "Legacy execution configuration (being phased out)",
+            "description": "Resource requirements",
             "properties": {
-                "args": {
-                    "type": "array",
-                    "description": "Command arguments",
-                    "items": {
-                        "type": "string"
+                "memory": {
+                    "type": "string",
+                    "description": "System memory needed",
+                    "pattern": "^[0-9]+(Ki|Mi|Gi|Ti)$",
+                    "examples": [
+                        "16Gi",
+                        "32Gi"
+                    ]
+                },
+                "gpu": {
+                    "type": "string",
+                    "description": "GPU memory needed",
+                    "pattern": "^[0-9]+(Ki|Mi|Gi|Ti)$",
+                    "examples": [
+                        "24Gi",
+                        "48Gi"
+                    ]
+                },
+                "disk": {
+                    "type": "string",
+                    "description": "Disk space needed",
+                    "pattern": "^[0-9]+(Ki|Mi|Gi|Ti)$",
+                    "examples": [
+                        "100Gi",
+                        "500Gi"
+                    ]
+                }
+            },
+            "additionalProperties": false
+        },
+        "doc": {
+            "type": "string",
+            "description": "Markdown documentation"
+        },
+        "authors": {
+            "type": "array",
+            "description": "Tool creators",
+            "items": {
+                "type": "object",
+                "required": [
+                    "name"
+                ],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Author name"
+                    },
+                    "email": {
+                        "type": "string",
+                        "description": "Author email",
+                        "format": "email"
+                    },
+                    "url": {
+                        "type": "string",
+                        "description": "Author website",
+                        "format": "uri"
                     }
                 },
-                "command": {
-                    "type": "string",
-                    "description": "Command override"
-                },
-                "timeout": {
-                    "type": "number",
-                    "description": "Execution timeout in milliseconds"
-                },
-                "env": {
-                    "type": "object",
-                    "description": "Environment variables for tool execution"
-                }
+                "additionalProperties": false
             }
         }
     },
     "patternProperties": {
         "^x-": {
-            "description": "Extensions to the Enact Protocol. The field name MUST begin with 'x-'."
+            "description": "Custom extensions (must begin with 'x-')"
         }
-    }
+    },
+    "additionalProperties": false
 }
