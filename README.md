@@ -72,6 +72,7 @@ That's it! This tool can now be published, discovered, and used by any AI model.
 ### A More Complete Example
 
 ```yaml
+enact: "1.0.0"
 name: enact/json/formatter
 description: "Formats and validates JSON data"
 command: "npx jq-cli@1.7.1 --raw-output '${filter}' <<< '${json}'"
@@ -109,13 +110,14 @@ description: string  # What the tool does
 command: string      # Shell command to execute
 
 # RECOMMENDED (production best practices)
+enact: string        # Protocol version
 timeout: string      # Execution timeout (Go duration format)
 tags: [string]       # Search and categorization tags
 license: string      # SPDX License identifier
 
 # OPTIONAL (advanced features)
 inputSchema: object  # JSON Schema for input validation
-signature: object    # Cryptographic signature
+signatures: object  # Cryptographic signatures (multiple signers supported)
 resources: object    # Resource requirements
 ```
 
@@ -254,12 +256,23 @@ inputSchema:
       default: "gpt-4"
   required: ["file"]
 
-signature:
-  algorithm: sha256
-  signer: developer-id
-  type: ecdsa-p256
-  created: 2025-05-15T23:55:41.328Z
-  value: MEUCICwNLAzYZQAul2/uhPkdjxNrNwkFWy2qYOGV5pWIpdabAiEAlpDsXUiOMKrXgIVZcddn6CoPsseC/3eLCSXEMOScg+M=
+# Multiple signatures from different parties
+signatures:
+  # Using public key as the map key
+  "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE...":
+    algorithm: sha256
+    type: ecdsa-p256
+    signer: "enact-official"  # Human-readable identifier
+    created: 2025-05-15T23:55:41.328Z
+    value: "MEUCICwNLAzYZQAul2/uhPkdjxNrNwkFWy2qYOGV5pWIpdabAiEA..."
+    role: "author"
+  "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAF...":
+    algorithm: sha256
+    type: ecdsa-p256
+    signer: "security-auditor"
+    created: 2025-05-16T10:30:00.000Z
+    value: "MEUCIDxNLAzYZQAul2/uhPkdjxNrNwkFWy2qYOGV5pWIpdabAiEB..."
+    role: "reviewer"
 ```
 
 ---
@@ -289,7 +302,7 @@ MCP defines [tools](https://modelcontextprotocol.io/docs/concepts/tools) with a 
 | Tool Discovery | ❌ | ✅ Semantic search & registry |
 | Tool Packaging | ❌ | ✅ Standard YAML schema |
 | Versioning | ❌ | ✅ Semantic versioning support |
-| Security & Verification | ❌ | ✅ Cryptographic signatures |
+| Security & Verification | ❌ | ✅ Cryptographic signatures with multi-signer support |
 | Environment Management | ❌ | ✅ Isolated execution environments |
 
 ---
@@ -422,16 +435,32 @@ examples:
 
 ### Cryptographic Signatures
 
-Tools can be signed for authenticity verification:
+Tools can be signed by multiple parties for authenticity verification. The new format uses public keys as map keys, enabling multiple signatures and streamlined verification:
 
 ```yaml
-signature:
-  algorithm: sha256
-  signer: developer-id
-  type: ecdsa-p256
-  created: 2025-05-15T23:55:41.328Z
-  value: MEUCICwNLAzYZQAul2/uhPkdjxNrNwkFWy2qYOGV5pWIpdabAiEAlpDsXUiOMKrXgIVZcddn6CoPsseC/3eLCSXEMOScg+M=
+signatures:
+  # Using public key as the map key for direct verification
+  "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE...":
+    algorithm: sha256
+    type: ecdsa-p256
+    signer: "enact-official"  # Human-readable identifier
+    created: 2025-05-15T23:55:41.328Z
+    value: "MEUCICwNLAzYZQAul2/uhPkdjxNrNwkFWy2qYOGV5pWIpdabAiEA..."
+    role: "author"
+  "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAF...":
+    algorithm: sha256
+    type: ecdsa-p256
+    signer: "security-auditor"
+    created: 2025-05-16T10:30:00.000Z
+    value: "MEUCIDxNLAzYZQAul2/uhPkdjxNrNwkFWy2qYOGV5pWIpdabAiEB..."
+    role: "reviewer"
 ```
+
+**Benefits of the new format:**
+- **Multiple Signers**: Support for author, reviewer, auditor signatures
+- **Direct Verification**: Public key in the map key enables immediate verification
+- **Clear Roles**: Optional role field clarifies each signer's relationship to the tool
+- **Extensible**: Easy to add new signers without breaking existing tools
 
 ---
 
@@ -537,7 +566,7 @@ annotations:
   destructiveHint: true  # Modifies files in place
 ```
 
-### Data Validation
+### Data Validation with Multiple Signatures
 ```yaml
 name: enact/data/json-validator
 description: "Validates JSON against a schema"
@@ -568,6 +597,23 @@ outputSchema:
       description: "Validation errors if any"
       items:
         type: object
+
+# Multiple signatures for trust and verification
+signatures:
+  "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE...":
+    algorithm: sha256
+    type: ecdsa-p256
+    signer: "data-team-lead"
+    created: 2025-05-15T23:55:41.328Z
+    value: "MEUCICwNLAzYZQAul2/uhPkdjxNrNwkFWy2qYOGV5pWIpdabAiEA..."
+    role: "author"
+  "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAF...":
+    algorithm: sha256
+    type: ecdsa-p256
+    signer: "security-team"
+    created: 2025-05-16T08:30:00.000Z
+    value: "MEUCIDxNLAzYZQAul2/uhPkdjxNrNwkFWy2qYOGV5pWIpdabAiEB..."
+    role: "security-reviewer"
 ```
 
 ### Web Scraping
@@ -719,21 +765,45 @@ command: "docker run node@sha256:abc123..."
 - Use **version ranges** (`@^1.2.0`) for development tools
 - Use **commit hashes** for security-critical applications
 
-### Cryptographic Signatures
+### Multi-Signature Support
 
 Verify tool authenticity with signatures:
 
 ```yaml
-signature:
-  algorithm: sha256
-  signer: developer-id
-  type: ecdsa-p256
-  created: 2025-05-15T23:55:41.328Z
-  value: MEUCICwNLAzYZQAul2/uhPkdjxNrNwkFWy2qYOGV5pWIpdabAiEAlpDsXUiOMKrXgIVZcddn6CoPsseC/3eLCSXEMOScg+M=
-  role: "author" # role is optional description of the signer.
+signatures:
+  # Author signature
+  "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE...":
+    algorithm: sha256
+    type: ecdsa-p256
+    signer: "john-doe"
+    created: 2025-05-15T23:55:41.328Z
+    value: "MEUCICwNLAzYZQAul2/uhPkdjxNrNwkFWy2qYOGV5pWIpdabAiEA..."
+    role: "author"
+    
+  # Security team review
+  "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAF...":
+    algorithm: sha256
+    type: ecdsa-p256
+    signer: "security-team"
+    created: 2025-05-16T08:30:00.000Z
+    value: "MEUCIDxNLAzYZQAul2/uhPkdjxNrNwkFWy2qYOGV5pWIpdabAiEB..."
+    role: "security-reviewer"
+    
+  # Management approval
+  "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAG...":
+    algorithm: sha256
+    type: ecdsa-p256
+    signer: "engineering-manager"
+    created: 2025-05-16T14:15:00.000Z
+    value: "MEUCIAxNLAzYZQAul2/uhPkdjxNrNwkFWy2qYOGV5pWIpdabAiEC..."
+    role: "approver"
 ```
 
-**Signature verification is handled automatically by the Enact MCP Server.**
+**Signature verification is handled automatically by the Enact MCP Server, with support for:**
+- **Multiple verification**: All signatures must be valid
+- **Role-based policies**: Require specific roles (author + reviewer)
+- **Key rotation**: Support for updating keys while maintaining trust
+- **Revocation**: Mark compromised keys as invalid
 
 ---
 
@@ -749,11 +819,17 @@ enact validate tool.yaml
 # Test locally
 enact test tool.yaml --input '{"text": "hello"}'
 
+# Sign a tool (adds to signatures)
+enact sign tool.yaml --key my-private-key.pem --role author
+
 # Publish to registry
 enact publish tool.yaml
 
 # Search for tools
 enact search "text analysis"
+
+# Verify signatures
+enact verify tool.yaml
 ```
 
 ---
@@ -789,10 +865,11 @@ const result = await client.call('execute-capability-by-id', {
 - Use familiar shell commands
 - Test locally before publishing
 - Version and sign your tools
+- **Multi-party signing** for enterprise approval workflows
 
 **For AI Applications:**
 - Discover tools semantically
-- Trust verified tools
+- Trust verified tool
 - Scale seamlessly
 - Consistent execution model
 
@@ -862,6 +939,13 @@ Use tools that work across platforms without installation:
 - ✅ `uvx package@version` (works everywhere with Python)
 - ✅ `docker run image:tag` (requires Docker but platform-agnostic)
 - ❌ `pdftotext` (requires system package installation)
+
+### 11. Use Multi-Signature for Production Tools
+For enterprise or critical tools, implement a signing workflow:
+- **Author signs** during development
+- **Security team reviews** and signs
+- **Manager approves** and signs
+- **Registry validates** all signatures before publication
 
 ---
 
@@ -934,16 +1018,24 @@ annotations:         # MCP-aligned behavior hints (all default to false)
   openWorldHint: boolean     # Interacts with external systems
 ```
 
-### Security
+### Multi-Signature Security
 
 ```yaml
-signature:           # Cryptographic signature (optional)
-  algorithm: string  # Hash algorithm: "sha256" (required)
-  type: string       # Signature type: "ecdsa-p256" (required)
-  signer: string     # Signer identifier (required)
-  created: string    # ISO timestamp (required)
-  value: string      # Base64 encoded signature (required)
-  role: string       # role is optional description of the signer.
+signatures:          # Cryptographic signatures (optional, supports multiple signers)
+  "PUBLIC_KEY_1":    # Base64-encoded public key as map key
+    algorithm: string    # Hash algorithm: "sha256" (required)
+    type: string         # Signature type: "ecdsa-p256" (required)
+    signer: string       # Human-readable signer identifier (required)
+    created: string      # ISO timestamp (required)
+    value: string        # Base64 encoded signature (required)
+    role: string         # Signer role: "author", "reviewer", "approver", etc. (optional)
+  "PUBLIC_KEY_2":    # Additional signers
+    algorithm: sha256
+    type: ecdsa-p256
+    signer: "security-team"
+    created: 2025-05-16T08:30:00.000Z
+    value: "MEUCIDxNLAzYZQAul2/uhPkdjxNrNwkFWy2qYOGV5pWIpdabAiEB..."
+    role: "security-reviewer"
 ```
 
 ### Extensions
@@ -959,6 +1051,7 @@ x-*: any             # Custom extensions (must begin with 'x-')
 **Current (Alpha)**
 - ✅ Core protocol specification
 - ✅ Command-based execution
+- ✅ Multi-signature support with public key mapping
 - ✅ Basic MCP integration via Enact MCP Server
 - 🔄 Signature verification implementation
 
@@ -973,6 +1066,7 @@ x-*: any             # Custom extensions (must begin with 'x-')
 - ⏳ Marketplace features
 - ⏳ Enhanced environment security
 - ⏳ Multi-language execution environments
+- ⏳ Federated signature verification
 
 ---
 
