@@ -12,7 +12,10 @@
         "enact": {
             "type": "string",
             "description": "Enact Protocol version",
-            "pattern": "^\\d+\\.\\d+\\.\\d+$"
+            "pattern": "^\\d+\\.\\d+\\.\\d+$",
+            "examples": [
+                "1.0.0"
+            ]
         },
         "name": {
             "type": "string",
@@ -35,7 +38,8 @@
                 "npx prettier@3.3.3 --write '${file}'",
                 "uvx black@24.4.2 '${file}'",
                 "docker run pandoc/core:3.1.11 -f markdown -t html '${input}'",
-                "curl -s 'https://api.example.com/v1/process' -d '${json}'"
+                "curl -s 'https://api.example.com/v1/process' -d '${json}'",
+                "echo '${text}' | npx slugify-cli@2.0.0"
             ]
         },
         "version": {
@@ -185,47 +189,67 @@
                 "additionalProperties": false
             }
         },
-        "signature": {
+        "signatures": {
             "type": "object",
-            "description": "Cryptographic signature for authenticity verification",
-            "required": [
-                "algorithm",
-                "signer",
-                "type",
-                "created",
-                "value"
-            ],
-            "properties": {
-                "algorithm": {
-                    "type": "string",
-                    "description": "Hash algorithm",
-                    "enum": [
-                        "sha256"
-                    ]
-                },
-                "signer": {
-                    "type": "string",
-                    "description": "Signer identifier"
-                },
-                "type": {
-                    "type": "string",
-                    "description": "Signature type",
-                    "enum": [
-                        "ecdsa-p256"
-                    ]
-                },
-                "created": {
-                    "type": "string",
-                    "description": "ISO timestamp of signature creation",
-                    "format": "date-time"
-                },
-                "value": {
-                    "type": "string",
-                    "description": "Base64 encoded signature"
-                },
-                "role": {
-                    "type": "string",
-                    "description": "Optional description of the signer"
+            "description": "Cryptographic signatures for authenticity verification (multiple signers supported)",
+            "patternProperties": {
+                "^[A-Za-z0-9+/]+={0,2}$": {
+                    "type": "object",
+                    "description": "Signature object keyed by Base64-encoded public key",
+                    "required": [
+                        "algorithm",
+                        "type",
+                        "signer",
+                        "created",
+                        "value"
+                    ],
+                    "properties": {
+                        "algorithm": {
+                            "type": "string",
+                            "description": "Hash algorithm",
+                            "enum": [
+                                "sha256"
+                            ]
+                        },
+                        "type": {
+                            "type": "string",
+                            "description": "Signature type",
+                            "enum": [
+                                "ecdsa-p256"
+                            ]
+                        },
+                        "signer": {
+                            "type": "string",
+                            "description": "Human-readable signer identifier",
+                            "examples": [
+                                "enact-official",
+                                "security-auditor",
+                                "john-doe",
+                                "engineering-manager"
+                            ]
+                        },
+                        "created": {
+                            "type": "string",
+                            "description": "ISO timestamp of signature creation",
+                            "format": "date-time"
+                        },
+                        "value": {
+                            "type": "string",
+                            "description": "Base64 encoded signature",
+                            "pattern": "^[A-Za-z0-9+/]+={0,2}$"
+                        },
+                        "role": {
+                            "type": "string",
+                            "description": "Signer role",
+                            "examples": [
+                                "author",
+                                "reviewer",
+                                "security-reviewer",
+                                "approver"
+                            ]
+                        }
+                    },
+                    "additionalProperties": false
                 }
             },
             "additionalProperties": false
