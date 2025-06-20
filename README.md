@@ -382,10 +382,10 @@ annotations:
 
 ### Environment Variables
 
-Environment variables are stored based on the tool's hierarchical name:
+Environment variables are stored based on the tool's package namespace, allowing multiple tools from the same package to share environment variables:
 
 ```yaml
-# Tool name determines storage location
+# Tool package determines storage location
 name: "acme-corp/discord/bot-maker"
 
 # Declare required environment variables
@@ -410,13 +410,18 @@ env:
 └── env/
     └── acme-corp/
         └── discord/
-            └── bot-maker/
-                ├── .env          # User's actual secrets
-                └── .env.example  # Template from tool
+            ├── .env          # Shared secrets for all discord tools
 ```
 
+**Benefits of Package-Level Environment Storage:**
+- **Shared Secrets**: Multiple tools in a package can use the same API keys and credentials
+- **Simplified Setup**: Users only configure secrets once per service, not per tool
+- **Logical Organization**: Environment variables are grouped by the service they connect to
+- **Example**: All Discord tools (`discord/webhook`, `discord/bot-manager`, `discord/message-sender`) share the same `DISCORD_BOT_TOKEN`
+
 **Security Model:**
-- Each tool execution reads ONLY from its specific directory
+- Each tool execution reads from its package directory (e.g., `acme-corp/discord/`)
+- Multiple tools in the same package can share environment variables
 - No access to parent process environment
 - Secrets stored in `.env` files (use OS file permissions)
 - Simple security model to start, will enhance over time
