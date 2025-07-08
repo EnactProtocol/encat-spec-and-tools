@@ -228,7 +228,7 @@ annotations:
 
 ## Get Started
 
-1. **Install:** `npm install -g enact-cli`
+1. **Install:** `npm install -g @enactprotocol/cli`
 2. **Create:** `enact init my-first-tool`
 3. **Publish:** `enact publish tool.yaml`
 4. **Use:** AI models can now discover and execute your tool!
