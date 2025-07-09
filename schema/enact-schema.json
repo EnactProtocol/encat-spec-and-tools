@@ -42,6 +42,17 @@
                 "echo '${text}' | npx slugify-cli@2.0.0"
             ]
         },
+        "from": {
+            "type": "string",
+            "description": "Container image to run the command on (optional, defaults to system shell)",
+            "examples": [
+                "node:18-alpine",
+                "python:3.11-slim",
+                "ubuntu:22.04",
+                "alpine:3.18",
+                "ghcr.io/user/custom-image:v1.0.0"
+            ]
+        },
         "version": {
             "type": "string",
             "description": "Tool definition version for tracking changes",
@@ -190,69 +201,66 @@
             }
         },
         "signatures": {
-            "type": "object",
+            "type": "array",
             "description": "Cryptographic signatures for authenticity verification (multiple signers supported)",
-            "patternProperties": {
-                "^[A-Za-z0-9+/]+={0,2}$": {
-                    "type": "object",
-                    "description": "Signature object keyed by Base64-encoded public key",
-                    "required": [
-                        "algorithm",
-                        "type",
-                        "signer",
-                        "created",
-                        "value"
-                    ],
-                    "properties": {
-                        "algorithm": {
-                            "type": "string",
-                            "description": "Hash algorithm",
-                            "enum": [
-                                "sha256"
-                            ]
-                        },
-                        "type": {
-                            "type": "string",
-                            "description": "Signature type",
-                            "enum": [
-                                "ecdsa-p256"
-                            ]
-                        },
-                        "signer": {
-                            "type": "string",
-                            "description": "Human-readable signer identifier",
-                            "examples": [
-                                "enact-official",
-                                "security-auditor",
-                                "john-doe",
-                                "engineering-manager"
-                            ]
-                        },
-                        "created": {
-                            "type": "string",
-                            "description": "ISO timestamp of signature creation",
-                            "format": "date-time"
-                        },
-                        "value": {
-                            "type": "string",
-                            "description": "Base64 encoded signature",
-                            "pattern": "^[A-Za-z0-9+/]+={0,2}$"
-                        },
-                        "role": {
-                            "type": "string",
-                            "description": "Signer role",
-                            "examples": [
-                                "author",
-                                "reviewer",
-                                "security-reviewer",
-                                "approver"
-                            ]
-                        }
+            "items": {
+                "type": "object",
+                "description": "Signature object",
+                "required": [
+                    "signer",
+                    "algorithm",
+                    "type",
+                    "value",
+                    "created"
+                ],
+                "properties": {
+                    "signer": {
+                        "type": "string",
+                        "description": "Signer identifier (UUID or human-readable name)",
+                        "examples": [
+                            "71e02e2c-148c-4534-9900-bd9646e99333",
+                            "enact-official",
+                            "security-auditor",
+                            "john-doe"
+                        ]
                     },
-                    "additionalProperties": false
-                }
-            },
-            "additionalProperties": false
+                    "algorithm": {
+                        "type": "string",
+                        "description": "Hash algorithm",
+                        "enum": [
+                            "sha256"
+                        ]
+                    },
+                    "type": {
+                        "type": "string",
+                        "description": "Signature type",
+                        "enum": [
+                            "ecdsa-p256"
+                        ]
+                    },
+                    "value": {
+                        "type": "string",
+                        "description": "Base64 encoded signature",
+                        "pattern": "^[A-Za-z0-9+/]+={0,2}$"
+                    },
+                    "created": {
+                        "type": "string",
+                        "description": "ISO timestamp of signature creation",
+                        "format": "date-time"
+                    },
+                    "role": {
+                        "type": "string",
+                        "description": "Signer role (optional)",
+                        "examples": [
+                            "author",
+                            "reviewer",
+                            "security-reviewer",
+                            "approver"
+                        ]
+                    }
+                },
+                "additionalProperties": false
+            }
         },
         "resources": {
             "type": "object",
