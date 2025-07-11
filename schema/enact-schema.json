@@ -181,9 +181,7 @@
             "description": "Test cases and expected outputs",
             "items": {
                 "type": "object",
-                "required": [
-                    "input"
-                ],
+                "required": [],
                 "properties": {
                     "input": {
                         "type": "object",

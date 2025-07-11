@@ -335,7 +335,7 @@ resources:           # Resource requirements
 
 ```yaml
 env:
-  VARIABLE_NAME:
+  SOME_VARIABLE_NAME:
     description: string  # What this variable is for (required)
     source: string       # Where to get this value (required)
     required: boolean    # Whether this is required (required)
@@ -358,9 +358,9 @@ authors:             # Tool creators (optional)
     email: string    # Author email (optional)
     url: string      # Author website (optional)
 
-examples:            # Test cases and expected outputs
-  - input: object    # Input parameters
-    output: any      # Expected output
+examples:            # Test cases and expected outputs (optional)
+  - input: object    # Input parameters (optional, omit for tools with no inputs)
+    output: any      # Expected output (optional)
     description: string # Test description (optional)
 ```
 
@@ -407,6 +407,50 @@ x-internal-id: "tool-12345"
 x-team-owner: "platform-team"
 x-cost-center: "engineering"
 ```
+
+
+## 🔐 Canonical Security Fields & Signature Logic
+
+Enact cryptographically signs only a subset of **critical security fields** to prevent tampering and ensure deterministic, reproducible signatures. These fields are now:
+
+- Listed **alphabetically** for deterministic ordering
+- **Empty values are excluded** (null, empty string, empty object/array)
+
+**Critical fields included in the signature:**
+
+- `annotations`  — Security behavior hints
+- `command`      — The actual execution payload
+- `description`  — What the tool claims to do
+- `enact`        — Protocol version security
+- `env`          — Environment variables
+- `from`         — Container image (critical for security)
+- `inputSchema`  — Defines the attack surface
+- `name`         — Tool identity (prevents impersonation)
+- `timeout`      — Prevents DoS attacks
+- `version`      — Tool version for compatibility
+
+> **Note:** Only non-empty values are included in the canonical JSON for signing. This ensures signatures are consistent and not affected by empty or missing fields.
+
+**Example (deterministic, critical-fields-only, sorted JSON):**
+
+```json
+{
+  "annotations": { ... },
+  "command": "npx prettier@3.3.3 --write '${file}'",
+  "description": "Formats JavaScript/TypeScript code",
+  "enact": "1.0.0",
+  "env": { ... },
+  "from": "node:18-alpine",
+  "inputSchema": { ... },
+  "name": "enact/code/prettier",
+  "timeout": "30s",
+  "version": "1.2.3"
+}
+```
+
+- The signature is computed over this canonical JSON, with keys sorted alphabetically.
+- Any field that is empty or missing is omitted from the signed data.
+
 
 
 ## Community
