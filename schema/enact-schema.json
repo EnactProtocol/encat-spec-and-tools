@@ -5,8 +5,7 @@
     "type": "object",
     "required": [
         "name",
-        "description",
-        "command"
+        "description"
     ],
     "properties": {
         "enact": {
@@ -33,7 +32,7 @@
         },
         "command": {
             "type": "string",
-            "description": "Shell command to execute (with versions or hash pins recommended)",
+            "description": "Shell command to execute with parameter substitution. Required for container-executed tools, omitted for LLM-driven tools",
             "examples": [
                 "npx prettier@3.3.3 --write '${file}'",
                 "uvx black@24.4.2 '${file}'",
@@ -44,7 +43,7 @@
         },
         "from": {
             "type": "string",
-            "description": "Container image to run the command on (optional, defaults to system shell)",
+            "description": "Container base image for tool execution (defaults to 'alpine:latest' if omitted)",
             "examples": [
                 "node:18-alpine",
                 "python:3.11-slim",
@@ -151,6 +150,7 @@
                     "type": "object",
                     "required": [
                         "description",
+                        "source",
                         "required"
                     ],
                     "properties": {
@@ -193,68 +193,6 @@
                     "description": {
                         "type": "string",
                         "description": "Test description"
-                    }
-                },
-                "additionalProperties": false
-            }
-        },
-        "signatures": {
-            "type": "array",
-            "description": "Cryptographic signatures for authenticity verification (multiple signers supported)",
-            "items": {
-                "type": "object",
-                "description": "Signature object",
-                "required": [
-                    "signer",
-                    "algorithm",
-                    "type",
-                    "value",
-                    "created"
-                ],
-                "properties": {
-                    "signer": {
-                        "type": "string",
-                        "description": "Signer identifier (UUID or human-readable name)",
-                        "examples": [
-                            "71e02e2c-148c-4534-9900-bd9646e99333",
-                            "enact-official",
-                            "security-auditor",
-                            "john-doe"
-                        ]
-                    },
-                    "algorithm": {
-                        "type": "string",
-                        "description": "Hash algorithm",
-                        "enum": [
-                            "sha256"
-                        ]
-                    },
-                    "type": {
-                        "type": "string",
-                        "description": "Signature type",
-                        "enum": [
-                            "ecdsa-p256"
-                        ]
-                    },
-                    "value": {
-                        "type": "string",
-                        "description": "Base64 encoded signature",
-                        "pattern": "^[A-Za-z0-9+/]+={0,2}$"
-                    },
-                    "created": {
-                        "type": "string",
-                        "description": "ISO timestamp of signature creation",
-                        "format": "date-time"
-                    },
-                    "role": {
-                        "type": "string",
-                        "description": "Signer role (optional)",
-                        "examples": [
-                            "author",
-                            "reviewer",
-                            "security-reviewer",
-                            "approver"
-                        ]
                     }
                 },
                 "additionalProperties": false
