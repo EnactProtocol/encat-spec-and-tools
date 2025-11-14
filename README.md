@@ -103,8 +103,8 @@ enact list
 
 - [Complete Protocol Specification](docs/SPEC.md) - Full technical details
 - [CLI Commands Reference](docs/COMMANDS.md) - All available commands
+- [Trust System Guide](docs/TRUST.md) - Multi-party attestation and verification
 - [Sigstore Implementation Guide](docs/SIGSTORE.md) - How signatures work
-- [Examples](examples/) - Sample tools and use cases
 - [Documentation](https://enactprotocol.com) - Full guides and tutorials
 
 ## License
