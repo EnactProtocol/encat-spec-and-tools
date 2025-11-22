@@ -1,18 +1,52 @@
 # Enact Protocol Field Specification
 
-**Version:** 1.0.1
-**Last Updated:** 2025-10-21
+**Version:** 2.0.0
+**Last Updated:** 2025-11-17
 
 This document provides a comprehensive reference for all Enact protocol fields used in tool definitions.
+
+## Overview
+
+All Enact tools are defined in a single **`enact.md`** file that combines:
+
+1. **YAML frontmatter** — Machine-readable metadata (fields documented below)
+2. **Markdown body** — Human-readable documentation and instructions
+
+This unified format serves as the single source of truth for both AI models and human developers.
+
+**Example `enact.md` structure:**
+```markdown
+---
+enact: "1.0.0"
+name: "alice/utils/greeter"
+description: "Greets the user by name"
+command: "echo 'Hello, ${name}!'"
+inputSchema:
+  type: object
+  properties:
+    name: { type: string }
+  required: ["name"]
+---
+
+# Greeter
+
+A simple tool that greets users by name.
+
+## Usage
+
+Provide a name and get a friendly greeting back.
+```
 
 ---
 
 ## Required Fields
 
+These fields must be present in the YAML frontmatter of every `enact.md` file.
+
 ### `name`
 - **Type:** `string`
 - **Description:** Hierarchical tool identifier using filepath-style naming
-- **Format:** `org/path/to/tool-name` (arbitrary depth, like Java packages)
+- **Format:** `org/path/to/tool-name` 
 - **Common pattern:** `org/category/tool-name` (but not prescribed)
 - **Examples:**
   - `enact/text/analyzer` - Two levels
@@ -49,12 +83,14 @@ This document provides a comprehensive reference for all Enact protocol fields u
 
 ## Recommended Fields
 
+These optional fields should be included in the YAML frontmatter for better tool discovery, execution control, and documentation.
+
 ### `enact`
 - **Type:** `string`
 - **Description:** Version of the Enact protocol specification
-- **Format:** Semantic version (e.g., `"1.0.0"`)
+- **Format:** Semantic version (e.g., `"2.0.0"`)
 - **Default:** Latest version at time of tool creation
-- **Example:** `enact: "1.0.0"`
+- **Example:** `enact: "2.0.0"`
 
 ### `from`
 - **Type:** `string`
@@ -105,6 +141,8 @@ This document provides a comprehensive reference for all Enact protocol fields u
 
 ## Schema Fields
 
+These fields define input and output structure in the YAML frontmatter, enabling validation and helping AI models use tools correctly.
+
 ### `inputSchema`
 - **Type:** `object` (JSON Schema)
 - **Description:** Defines the structure and validation for tool input parameters
@@ -151,6 +189,8 @@ This document provides a comprehensive reference for all Enact protocol fields u
 
 ## Environment Variables
 
+Define environment variable requirements in the YAML frontmatter's `env` field.
+
 ### `env`
 - **Type:** `object`
 - **Description:** Environment variable configuration for the tool
@@ -182,6 +222,8 @@ This document provides a comprehensive reference for all Enact protocol fields u
 ---
 
 ## Behavior Annotations
+
+Provide execution hints to AI models via the `annotations` field in the YAML frontmatter.
 
 ### `annotations`
 - **Type:** `object`
@@ -228,6 +270,8 @@ annotations:
 
 ## Resource Requirements
 
+Specify resource limits in the YAML frontmatter's `resources` field to control execution constraints.
+
 ### `resources`
 - **Type:** `object`
 - **Description:** Resource limits and requirements for tool execution
@@ -263,11 +307,13 @@ resources:
 
 ## Documentation Fields
 
+Additional metadata fields in the YAML frontmatter for richer tool documentation.
+
 ### `doc`
 - **Type:** `string`
-- **Description:** Extended Markdown documentation for the tool
+- **Description:** Extended Markdown documentation for the tool (YAML frontmatter field)
 - **Format:** Markdown
-- **Best Practice:** Keep brief in YAML; use separate `.md` files for extensive docs
+- **Best Practice:** Keep brief in YAML frontmatter; use the Markdown body section of `enact.md` for extensive documentation, or `RESOURCES.md` for progressive disclosure
 
 ### `authors`
 - **Type:** `array of objects`
@@ -290,6 +336,8 @@ resources:
 ---
 
 ## Testing and Examples
+
+Define test cases in the YAML frontmatter's `examples` field to enable automated validation.
 
 ### `examples`
 - **Type:** `array of objects`
@@ -374,6 +422,8 @@ Signing with Sigstore...
 
 ## Custom Extensions
 
+Add custom metadata fields to the YAML frontmatter using the `x-*` prefix.
+
 ### `x-*` prefix
 - **Type:** Any
 - **Description:** Custom fields for implementation-specific or organizational metadata
@@ -395,9 +445,9 @@ When publishing tools, Sigstore signs the **entire tool bundle** (tarball). The 
 
 **What gets signed:**
 - The complete tarball (`.tar.gz`) containing:
-  - Tool metadata file (`enact.md`)
+  - Tool definition file (`enact.md` with YAML frontmatter + Markdown documentation)
   - Source code and dependencies
-  - Documentation files
+  - Additional documentation files (e.g., `RESOURCES.md`)
   - All resources
 
 **Hash computation:**
@@ -407,16 +457,16 @@ When publishing tools, Sigstore signs the **entire tool bundle** (tarball). The 
 
 **What is NOT signed in the metadata:**
 - Signatures are stored separately in `.sigstore-bundle` files
-- The tool metadata file does not contain signature fields
-- This keeps the metadata clean and focused on tool definition
+- The `enact.md` file does not contain signature fields
+- This keeps the tool definition clean and focused on functionality
 
 **Example:**
 ```bash
 # Tool structure
 my-tool/
-├── enact.md           # Tool metadata and documentation
+├── enact.md           # Tool definition (YAML frontmatter + Markdown docs)
 ├── src/               # Source code
-└── RESOURCES.md       # Additional documentation (optional)
+└── RESOURCES.md       # Additional documentation (optional, for progressive disclosure)
 
 # After signing
 my-tool-v1.0.0.tar.gz           # Signed tarball
@@ -425,33 +475,42 @@ my-tool.sigstore-bundle         # Signature + certificate + Rekor proof
 
 ---
 
-## File Format
+## File Format: `enact.md`
 
-All Enact tools use **`enact.md`** — a Markdown file with YAML frontmatter.
+All Enact tools are defined in a single **`enact.md`** file — a Markdown document with YAML frontmatter.
 
 ### Structure
-- **YAML frontmatter** contains structured metadata
+- **YAML frontmatter** (between `---` delimiters) contains structured tool metadata
 - **Markdown body** contains human-readable documentation and instructions
-- Example:
-  ```markdown
-  ---
-  enact: "1.0.0"
-  name: "org/category/tool"
-  description: "Tool description"
-  command: "python src/main.py ${args}"  # Optional
-  ---
+- **Single source of truth** for both machine-readable specs and human documentation
 
-  # Tool Name
+### Example:
+```markdown
+---
+enact: "1.0.0"
+name: "org/category/tool"
+description: "Tool description"
+command: "python src/main.py ${args}"  # Optional
+inputSchema:
+  type: object
+  properties:
+    args:
+      type: string
+  required: ["args"]
+---
 
-  Detailed documentation in Markdown format.
+# Tool Name
 
-  ## Usage
-  ...
-  ```
+Detailed documentation in Markdown format.
+
+## Usage
+
+Explain how to use the tool, provide examples, tips, etc.
+```
 
 ### Execution Model
 
-The presence of a `command` field determines execution:
+The presence of a `command` field in the YAML frontmatter determines execution:
 - **With `command`** → Container-executed (deterministic)
 - **Without `command`** → LLM-driven (instructions interpreted by AI)
 
@@ -459,18 +518,20 @@ The presence of a `command` field determines execution:
 
 ## Tool Types
 
+Both tool types are defined in `enact.md` files — the presence of a `command` field determines the execution model.
+
 ### Container-Executed Tools
-- **Has:** `command` field
+- **Has:** `command` field in YAML frontmatter
 - **Execution:** Runs in isolated Dagger container
 - **Characteristics:** Deterministic, reproducible
-- **Format:** `enact.md` with command in frontmatter
+- **Use case:** Scripts, CLI tools, data processing
 
 ### LLM-Driven Tools
-- **No:** `command` field
-- **Execution:** Instructions interpreted by LLM
+- **No:** `command` field in YAML frontmatter
+- **Execution:** Markdown body instructions interpreted by LLM
 - **Characteristics:** Non-deterministic, flexible
-- **Format:** `enact.md` with rich documentation in body
-- **Supports:** Progressive disclosure (on-demand content loading)
+- **Use case:** Complex analysis, creative tasks, multi-step reasoning
+- **Supports:** Progressive disclosure (on-demand content loading via RESOURCES.md)
 
 ---
 

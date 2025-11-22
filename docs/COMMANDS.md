@@ -2,6 +2,34 @@
 
 This document provides a comprehensive overview of all available commands in the Enact CLI tool.
 
+## Table of Contents
+
+### Core Commands
+1. [run](#1-run---run-tools-declared-command) - Run tool's declared command
+2. [exec](#2-exec---execute-arbitrary-command-in-tools-environment) - Execute arbitrary command in tool's environment
+3. [install](#3-install---install-tool) - Install tool
+4. [search](#4-search---discover-tools) - Discover tools
+5. [sign](#5-sign---sign-tool) - Sign tool
+6. [publish](#6-publish---publish-tool) - Publish tool
+7. [get](#7-get---get-tool-info) - Get tool info
+
+### Trust & Security Commands
+8. [trust](#8-trust---manage-trust-settings) - Manage trust settings
+9. [report](#9-report---report-tool-issues) - Report tool issues
+
+### Environment & Configuration
+10. [env](#10-env---environment-variables) - Environment variables
+11. [config](#11-config---configuration) - Configuration
+
+### Utility Commands
+12. [cache](#12-cache---cache-management) - Cache management
+13. [list](#13-list---list-tools) - List tools
+
+### Authentication
+14. [auth](#14-auth---authentication) - Authentication
+
+---
+
 ## Overview
 
 Enact CLI manages containerized tools with cryptographic signing. It supports local development in `~/.enact/local/` and automatic caching of registry tools in `~/.enact/cache/`.
@@ -173,32 +201,7 @@ enact search formatter --json
 
 ---
 
-### 5. validate - Validate Tool
-
-**Purpose**: Validate tool definition before publishing.
-
-**Usage**: `enact validate [path]`
-
-**Arguments**:
-- `path` - Path to tool directory (default: current directory)
-
-**Checks**:
-- Protocol version compatibility
-- Required fields present
-- Name format valid
-- Tags present for discovery
-- Schema validity
-- File references exist
-
-**Examples**:
-```bash
-enact validate                    # Validate current directory
-enact validate ./my-tool/         # Validate specific directory
-```
-
----
-
-### 6. sign - Sign Tool
+### 5. sign - Sign Tool
 
 **Purpose**: Cryptographically sign a tool for publishing.
 
@@ -226,7 +229,7 @@ enact sign ./my-tool/ --identity=me@example.com
 
 ---
 
-### 7. publish - Publish Tool
+### 6. publish - Publish Tool
 
 **Purpose**: Publish signed tool to registry.
 
@@ -243,14 +246,13 @@ enact sign ./my-tool/ --identity=me@example.com
 **Examples**:
 ```bash
 # Complete publishing workflow
-enact validate ./my-tool/
 enact sign ./my-tool/
 enact publish ./my-tool/
 ```
 
 ---
 
-### 8. get - Get Tool Info
+### 7. get - Get Tool Info
 
 **Purpose**: Retrieve tool metadata and instructions (works for all tools).
 
@@ -285,26 +287,92 @@ enact get acme-corp/workflows/data-pipeline --format md
 
 ---
 
-### 9. verify - Verify Tool
+## Trust & Security Commands
 
-**Purpose**: Verify cryptographic signature and authenticity.
+### 8. trust - Manage Trust Settings
 
-**Usage**: `enact verify <tool-name>`
+**Purpose**: Control which publishers and auditors you trust.
 
-**Arguments**:
-- `tool-name` - Tool identifier from registry
+**Usage**: `enact trust <subcommand> [identity]`
 
-**Verification includes**:
-- Tarball hash matches signature
-- Signature valid
-- Certificate chain valid
-- Rekor transparency log entry
-- Certificate not revoked
+**Subcommands**:
+- `<identity>` - Trust a publisher or auditor (shorthand for `add`)
+- `-r <identity>` or `remove <identity>` - Remove trust
+- `list` - List all trusted identities
+- `check <tool@version>` - Check trust status of a tool
+
+**Identity formats**:
+- **Publishers** (Enact usernames): `alice`, `EnactProtocol`, `acme-corp`
+- **Auditors** (OIDC identities): `github:EnactProtocol`, `google:security@company.com`
+- **Wildcards**: `github:my-org/*`, `google:*@company.com`
 
 **Examples**:
 ```bash
-enact verify kgroves88/ai/pdf-extract
+# Trust publishers (Enact accounts)
+enact trust alice
+enact trust EnactProtocol
+
+# Trust auditors (OIDC identities)
+enact trust github:EnactProtocol
+enact trust google:security@company.com
+
+# Trust with wildcards
+enact trust github:my-company/*
+enact trust google:*@company.com
+
+# Remove trust
+enact trust -r alice
+enact trust -r github:sketchy-org
+
+# List trusted identities
+enact trust list
+
+# Check tool's trust status and view attestations
+enact trust check alice/utils/greeter@v1.0.0
 ```
+
+**Configuration storage**: `~/.enact/config.yaml`
+
+See [TRUST.md](TRUST.md) for complete trust system documentation.
+
+---
+
+### 9. report - Report Tool Issues
+
+**Purpose**: Report security vulnerabilities or issues with a tool.
+
+**Usage**: `enact report <tool@version> --reason "<description>" [options]`
+
+**Arguments**:
+- `tool@version` - Tool identifier with version
+
+**Options**:
+- `--reason <description>` - Issue description (required)
+- `--severity <level>` - Severity: critical, high, medium, low
+- `--category <type>` - Issue type: security, malware, quality, license, other
+
+**Behavior**:
+- Creates a signed report in the registry
+- Notifies tool publisher
+- May affect tool's trust status
+- Reports are public and auditable
+
+**Examples**:
+```bash
+# Report security vulnerability
+enact report alice/utils/greeter@v1.0.0 \
+  --reason "SQL injection vulnerability in query handler" \
+  --severity critical \
+  --category security
+
+# Report quality issue
+enact report bob/tools/formatter@v2.0.0 \
+  --reason "Tool fails on large files" \
+  --severity medium \
+  --category quality
+```
+
+**Note**: False reports may result in account suspension.
 
 ---
 
@@ -467,13 +535,10 @@ enact run myorg/utils/my-tool --args '{"name":"World"}'
 
 ### Publishing Workflow
 ```bash
-# 1. Validate
-enact validate ./my-tool/
-
-# 2. Sign
+# 1. Sign
 enact sign ./my-tool/
 
-# 3. Publish
+# 2. Publish
 enact publish ./my-tool/
 ```
 
@@ -611,9 +676,9 @@ When executing a tool, Enact searches in this order:
 
 1. **User-level tools** (`~/.enact/tools/`) skip signature verification (user-controlled workspace)
 2. **Cached tools** are verified on download from registry
-3. **Signature verification** happens automatically during download
+3. **Signature verification** happens automatically during install/run
 4. **Environment variables** are scoped to tool namespaces
-5. Use `enact verify` to independently verify any cached tool
+5. Use `enact trust check` to view trust status and attestations for any tool
 
 ---
 
@@ -629,6 +694,6 @@ When executing a tool, Enact searches in this order:
 | Run custom command | `enact exec org/cat/tool "command"` |
 | Find tools | `enact search "keyword"` |
 | Customize registry tool | `enact install org/cat/tool --global` then edit |
-| Publish tool | `enact validate && enact sign && enact publish` |
-| Verify tool | `enact verify org/cat/tool` |
+| Publish tool | `enact sign && enact publish` |
+| Check tool trust | `enact trust check org/cat/tool@version` |
 | Clean cache | `enact cache clean` |

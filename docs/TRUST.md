@@ -1,800 +1,558 @@
-# Enact Trust System
+# TRUST.md
 
-**A multi-party attestation model for verifying AI tools with cryptographic signatures and audits.**
+## Enact Trust System
+
+**A multi-party attestation model for verifying AI tools with cryptographic signatures.**
+
+Enact uses two types of identities for comprehensive security:
+
+1. **Publishers** (Enact usernames) - Who created/published the tool
+2. **Auditors** (OIDC identities) - Who reviewed and attested the tool
+
+Users configure trust for both, giving them full control over what runs on their system.
 
 ---
 
 ## Overview
 
-Enact uses **Sigstore** for cryptographic signing combined with a **flexible trust model** that lets you decide which publishers and auditors you trust. Every tool has a publisher signature, and auditors can add independent attestations to verify security, quality, or compliance.
+### Two Identity Types
 
-**Key Concepts:**
-- **Publishers** sign tools when they create them (identity from GitHub)
-- **Auditors** review tools and add attestations (also signed with Sigstore)
-- **Users** configure which publishers/auditors they trust
-- **Registry** stores signatures and attestations (but doesn't decide trust)
+**Publishers** - Enact accounts
+- Created on enact.io
+- Username becomes namespace (e.g., `alice` → `alice/*`)
+- Used for publishing tools to registry
+
+**Auditors** - OIDC identities (GitHub, Google, Microsoft, etc.)
+- Used for cryptographically signing attestations
+- Verified via Sigstore (Fulcio + Rekor)
+- Can be anyone - tool publishers, third-party reviewers, security firms
+
+**Key insight:** Publishers upload tools. Auditors sign attestations about those tools. Users decide which publishers and auditors they trust.
 
 ---
 
 ## How It Works
 
-### 1. Publishers Sign Tools
-
-When a publisher creates a tool, they sign it with Sigstore:
+### 1. Publishers Create and Upload Tools
 
 ```bash
-cd my-tool/
-enact sign .
+# Sign up on https://enact.io
+# Username: alice
+
+# Login and publish
+enact auth login
 enact publish .
+# ✓ Published alice/utils/greeter@v1.0
 ```
 
-This creates a **publisher signature** that proves:
-- ✅ Who created the tool (GitHub identity)
-- ✅ The tool hasn't been tampered with
-- ✅ When it was signed (Rekor timestamp)
+**Namespace rule:** Your Enact username = your namespace.
 
-**Publisher identity example:**
-```
-repo:acme-corp/tools:ref:refs/heads/main
-```
+### 2. Auditors Review and Sign Tools
 
-### 2. Auditors Add Attestations
-
-Independent auditors can review published tools and add attestations:
+Anyone can audit any tool by signing an attestation:
 
 ```bash
-# Download and review the tool
-enact download acme-corp/data/processor@v2.1.0
-cd acme-corp-data-processor/
+# Review the tool (future: enact inspect for containerized review)
+# For now, review via registry source code view or install locally
 
-# Manual code review, security scan, compliance check, etc.
+# Sign if it passes review
+enact sign alice/utils/greeter@v1.0
 
-# Create attestation
-enact attest create \
-  --subject "acme-corp/data/processor@v2.1.0" \
-  --type "https://enactprotocol.com/audit/v1" \
-  --findings "no-critical-issues" \
-  --report-url "https://audits.enactprotocol.com/report/123"
+? Sign attestation with:
+  > GitHub
+    Google
+    Microsoft
 
-# Publish attestation (signed with auditor's GitHub identity)
-enact attest publish acme-corp/data/processor attestation.bundle
+# Opens browser for OIDC authentication
+# Creates Sigstore signature
+# ✓ Attestation published
+  Signed by: github.com/EnactProtocol
+  Logged to Rekor: #123456
 ```
 
-**Attestation types:**
-- `https://enactprotocol.com/audit/v1` - Security/code review
-- `https://enactprotocol.com/compliance/v1` - Regulatory compliance
-- `https://enactprotocol.com/performance/v1` - Performance testing
-- Custom types for your organization
+**Or report issues:**
+```bash
+# Report if tool has security issues
+enact report alice/utils/greeter@v1.0 --reason "SQL injection vulnerability in query handler"
+
+# ✓ Failed attestation published
+  Signed by: github.com/security-firm
+```
+
+**What gets signed:**
+- Tool bundle hash (cryptographic proof of exact version)
+- Status: passed or failed
+- Optional: reason, report URL, findings
+- Your OIDC identity
+- Timestamp (via Rekor)
 
 ### 3. Users Configure Trust
 
-Users create a trust configuration that says which publishers and auditors they trust:
-
-```json
-// ~/.enact/trusted.json (global) or .enact/trusted.json (project)
-{
-  "version": "1.0.0",
-  "publishers": {
-    "direct": [
-      "repo:EnactProtocol/*",
-      "repo:my-company/tools:*"
-    ]
-  },
-  "auditors": {
-    "accepted": [
-      "repo:EnactProtocol/audits",
-      "repo:company2/security",
-      "repo:ossf/audits"
-    ],
-    "required": {
-      "financial/*": ["repo:company2/security"],
-      "healthcare/*": ["repo:hipaa-auditor/compliance"]
-    }
-  },
-  "policies": {
-    "default": "prompt",
-    "max_attestation_age_days": 180,
-    "min_auditors": 1
-  }
-}
-```
-
-### 4. Installation Checks Trust
-
-When installing a tool, Enact automatically checks if it meets your trust requirements:
+Control which publishers and auditors you trust:
 
 ```bash
-enact install acme-corp/data/processor
+# Trust publishers (no colon = Enact username)
+enact trust alice
+enact trust EnactProtocol
+enact trust acme-corp
+
+# Trust auditors (has colon = OIDC identity)
+enact trust github:EnactProtocol
+enact trust google:security@company.com
+enact trust github:ossf
+
+# Remove trust (automatically inferred from format)
+enact trust -r alice                    # Removes publisher
+enact trust -r github:untrusted-org     # Removes auditor
+
+# List all trusted identities
+enact trust list
 ```
 
-**Trust verification flow:**
-1. Is the publisher directly trusted? → Install
-2. Has a trusted auditor attested? → Install
-3. Are namespace-specific requirements met? → Install
-4. Otherwise → Apply default policy (prompt, allow, or deny)
-
----
-
-## Trust Configuration
-
-### Publishers
-
-**Direct trust** means you trust a publisher to create tools without needing audits.
-
-```json
-{
-  "publishers": {
-    "direct": [
-      "repo:EnactProtocol/*",           // Trust all EnactProtocol repos
-      "repo:my-company/tools:*",         // Trust specific repo
-      "repo:acme-corp/*:ref:refs/heads/main"  // Only main branch
-    ]
-  }
-}
+**Or edit config directly:**
+```yaml
+# ~/.enact/config.yaml
+trust:
+  publishers:
+    - EnactProtocol
+    - alice
+    - acme-corp
+  
+  auditors:
+    - github:EnactProtocol
+    - github:ossf
+    - google:security@company.com
+  
+  policy: require_audit
 ```
 
-**When to trust publishers directly:**
-- Official Enact tools
-- Your own organization's tools
-- Well-known, reputable publishers
-
-### Auditors
-
-**Accepted auditors** are third parties you trust to verify tools.
-
-```json
-{
-  "auditors": {
-    "accepted": [
-      "repo:EnactProtocol/audits",      // Official Enact audits
-      "repo:ossf/audits",                // Open Source Security Foundation
-      "repo:my-company/security"         // Your company's security team
-    ]
-  }
-}
-```
-
-**When to trust auditors:**
-- Established security organizations (OSSF, CNCF, etc.)
-- Your company's internal security/compliance teams
-- Reputable third-party audit firms
-
-### Required Audits (Namespace-Specific)
-
-For sensitive namespaces, you can **require** specific audits:
-
-```json
-{
-  "auditors": {
-    "required": {
-      "financial/*": [
-        "repo:my-company/security"
-      ],
-      "healthcare/*": [
-        "repo:hipaa-auditor/compliance",
-        "repo:my-company/security"
-      ],
-      "acme-corp/critical/*": [
-        "repo:EnactProtocol/audits",
-        "repo:company2/security"
-      ]
-    }
-  }
-}
-```
-
-**Required audits are strict:**
-- Tool MUST have attestations from ALL specified auditors
-- Installation blocked if requirements not met
-- Use for high-risk tools (financial, healthcare, infrastructure)
-
-### Policies
-
-```json
-{
-  "policies": {
-    // What to do for tools that don't meet trust criteria
-    "default": "prompt",  // "allow" | "prompt" | "deny"
-    
-    // Reject attestations older than this
-    "max_attestation_age_days": 180,
-    
-    // Minimum number of trusted auditor attestations
-    "min_auditors": 1
-  }
-}
-```
-
----
-
-## User Experience
-
-### Scenario 1: Trusted Publisher
+### 4. Installing with Trust Verification
 
 ```bash
-$ enact install EnactProtocol/utils/validator
+enact install alice/utils/greeter
 
-✓ Installing EnactProtocol/utils/validator@v1.2.0
-  Publisher: repo:EnactProtocol/core (trusted)
-  Downloaded and verified in 2.3s
-```
-
-No prompt, installs immediately because publisher is trusted.
-
----
-
-### Scenario 2: Audited by Trusted Auditor
-
-```bash
-$ enact install acme-corp/data/processor
-
-✓ Installing acme-corp/data/processor@v2.1.0
-  Publisher: repo:acme-corp/tools (verified)
-  Audited by: repo:EnactProtocol/audits ✓ (trusted auditor)
-  Audit report: https://audits.enactprotocol.com/report/123
-  Findings: no-critical-issues
-  Downloaded and verified in 2.8s
-```
-
-Publisher isn't directly trusted, but a trusted auditor has verified it.
-
----
-
-### Scenario 3: Unknown Tool (Prompt)
-
-```bash
-$ enact install random-org/sketchy/tool
-
-⚠ Trust verification needed
-
-Tool: random-org/sketchy/tool@v1.0.0
-Publisher: repo:random-org/tools (not trusted)
-Audits: None
-
-This tool has not been audited by any of your trusted auditors:
-  - EnactProtocol/audits
-  - company2/security
-  - ossf/audits
-
-Options:
-  [v] View tool details and manifest
-  [a] Install anyway (not recommended)
-  [t] Trust this publisher for future installs
-  [c] Cancel
-
-Choice: █
-```
-
-User is prompted to make a decision because tool doesn't meet trust criteria.
-
----
-
-### Scenario 4: Missing Required Audit
-
-```bash
-$ enact install acme-corp/financial/analyzer
-
-✗ Installation blocked by trust policy
-
-Tool: acme-corp/financial/analyzer@v1.0.0
-Publisher: repo:acme-corp/tools (verified)
-
-Required audits for financial/* namespace:
-  ✗ repo:company2/security (MISSING)
-
-Found audits:
-  ✓ repo:EnactProtocol/audits
-
-This tool requires a security audit from company2/security 
-but none was found. Contact the publisher or wait for the 
-required audit to be published.
-```
-
-Installation is blocked because namespace-specific requirements aren't met.
-
----
-
-### Scenario 5: Multiple Audits
-
-```bash
-$ enact get acme-corp/data/processor
-
-Name: acme-corp/data/processor
-Version: v2.1.0
-Description: Process and validate CSV files
-
-Publisher: repo:acme-corp/tools
-  Signed: 2025-11-14T10:30:00Z
-  Certificate: Valid ✓
-  Rekor entry: 69281180
-
+Tool: alice/utils/greeter@v1.0
+  Published by: @alice (Enact)
+  
 Attestations:
-  ✓ Security Audit by EnactProtocol/audits
-    Type: https://enactprotocol.com/audit/v1
-    Date: 2025-11-14T15:00:00Z
-    Report: https://audits.enactprotocol.com/report/123
-    Findings: no-critical-issues
-    Rekor entry: 69281245
+  ✓ github.com/EnactProtocol - passed
+    Audit date: 2025-01-15
+  
+  ✓ github.com/ossf - passed
+    Audit date: 2025-01-16
 
-  ✓ Compliance Audit by company2/security
-    Type: https://enactprotocol.com/compliance/v1
-    Date: 2025-11-14T16:30:00Z
-    Report: https://company2.com/audits/456
-    Findings: compliant
-    Rekor entry: 69281302
+Trust Status:
+  Publisher: @alice (not in trusted publishers)
+  Auditors: ✓ 2 trusted attestations found
+  
+Decision: ✓ INSTALL (trusted auditor attestations)
 
-Trust Status: ✓ Trusted (audited by EnactProtocol/audits)
+Install? [Y/n]:
 ```
-
-Users can see all signatures and attestations with full transparency.
 
 ---
 
-## Managing Trust
+## Trust Decision Flow
 
-### CLI Commands
+When you install a tool, Enact checks:
+
+1. **Is publisher trusted?** → ✅ Install immediately
+2. **Any trusted auditor signed it?** → ✅ Install
+3. **Neither trusted?** → Apply policy (prompt, block, or allow)
+
+**Example scenarios:**
+
+```yaml
+# Scenario 1: Trust the publisher
+trust:
+  publishers:
+    - alice
+
+# alice/tool → Installs immediately (no audit needed)
+# bob/tool → Checks auditors
+```
+
+```yaml
+# Scenario 2: Only trust auditors
+trust:
+  auditors:
+    - github:EnactProtocol
+
+# alice/tool (audited by EnactProtocol) → Installs
+# alice/tool (not audited) → Blocked/prompted
+# bob/tool (audited by EnactProtocol) → Installs
+```
+
+```yaml
+# Scenario 3: Trust both
+trust:
+  publishers:
+    - alice
+  auditors:
+    - github:EnactProtocol
+
+# alice/tool → Installs (trusted publisher)
+# bob/tool (audited) → Installs (trusted auditor)
+# bob/tool (not audited) → Blocked/prompted
+```
+
+---
+
+## Trust Policies
+
+```yaml
+trust:
+  policy: require_audit  # Options: require_audit, prompt, allow
+  minimum_attestations: 1  # How many trusted auditors required
+```
+
+**Policies:**
+- **require_audit** - Block if no trusted publisher/auditor (recommended)
+- **prompt** - Ask user to confirm
+- **allow** - Install anyway (development mode)
+
+**Minimum attestations:**
+```yaml
+trust:
+  auditors:
+    - github:EnactProtocol
+    - github:ossf
+  minimum_attestations: 2  # Require both auditors to sign
+```
+
+---
+
+## Self-Attestation
+
+Publishers can audit their own tools:
 
 ```bash
-# Add a trusted publisher
-enact trust add publisher "repo:my-company/*"
+# Publish
+enact publish .
+# ✓ Published alice/my-tool@v1.0
 
-# Add a trusted auditor
-enact trust add auditor "repo:ossf/audits"
+# Self-attest
+enact sign alice/my-tool@v1.0
+# Signs with: github.com/alice
+```
 
-# Require specific auditor for namespace
-enact trust require "financial/*" "repo:company2/security"
+**User perspective:**
+```
+Attestations:
+  ✓ github.com/alice - passed (self-attested)
 
-# Remove trust
-enact trust remove auditor "repo:old-auditor/*"
+Your trust:
+  Publisher: @alice (not trusted)
+  Auditors: github:alice (not trusted)
 
-# List all trusted entities
+⚠ No trusted attestations found
+Install anyway? [y/N]:
+```
+
+**To trust self-attestations:**
+```bash
+# Option 1: Trust the publisher
+enact trust alice
+
+# Option 2: Trust their OIDC identity as auditor
+enact trust github:alice
+```
+
+---
+
+## CLI Commands
+
+### Trust Management
+```bash
+# Trust publishers (no colon = Enact username)
+enact trust alice
+enact trust EnactProtocol
+enact trust acme-corp
+
+# Trust auditors (has colon = OIDC identity)
+enact trust github:EnactProtocol
+enact trust google:security@company.com
+enact trust github:my-company/*
+
+# Remove trust (format automatically inferred)
+enact trust -r alice                    # Removes publisher
+enact trust -r github:sketchy-org       # Removes auditor
+
+# List all trusted identities
 enact trust list
 
-# View trust status for a specific tool
-enact trust check acme-corp/data/processor
+# Check trust status for a tool
+enact trust check alice/my-tool@v1.0
 ```
 
-### Example: List Trusted Entities
-
+### Auditing
 ```bash
-$ enact trust list
+# Review tool (future: enact inspect)
+# For now, review via registry or install locally
 
-Trusted Publishers:
-  - repo:EnactProtocol/*
-  - repo:my-company/tools:*
+# Sign if it passes audit
+enact sign tool@version
 
-Trusted Auditors:
-  - repo:EnactProtocol/audits
-  - repo:company2/security
-  - repo:ossf/audits
+# Report if it fails audit
+enact report tool@version --reason "Security issue found"
 
-Required Audits by Namespace:
-  - financial/* → repo:company2/security
-  - healthcare/* → repo:hipaa-auditor/compliance
-
-Default Policy: prompt
-Max Attestation Age: 180 days
-Minimum Auditors: 1
+# Check trust status and view attestations
+enact trust check tool@version
 ```
 
 ---
 
-## Project vs Global Trust
+## Identity Format
 
-Trust configurations can exist at two levels:
-
-### Global Trust (`~/.enact/trusted.json`)
-
-Applies to all projects on your machine.
-
+### Publishers (Enact Usernames)
 ```bash
-# Add to global config
-enact trust add auditor "repo:ossf/audits" --global
+enact trust alice
+enact trust acme-corp
+enact trust EnactProtocol
 ```
 
-**Use for:**
-- Personal preferences
-- Organization-wide auditors
-- General security policies
+Simple username from enact.io account. **No colon in the identifier.**
 
-### Project Trust (`.enact/trusted.json`)
+### Auditors (OIDC Identities)
 
-Committed to git and shared with your team.
-
+**Shorthand (has colon):**
 ```bash
-# Add to project config
-cd my-project/
-enact trust add auditor "repo:my-company/security"
-git add .enact/trusted.json
-git commit -m "Require company security audits"
+enact trust github:EnactProtocol
+enact trust google:alice@example.com
+enact trust microsoft:security@company.com
 ```
 
-**Use for:**
-- Team requirements
-- Project-specific policies
-- Compliance requirements
+**Wildcards:**
+```bash
+enact trust github:my-org/*        # Trust entire GitHub org
+enact trust google:*@company.com   # Trust all company emails
+```
 
-### Merge Behavior
+**Advanced (explicit in config file):**
+```yaml
+trust:
+  auditors:
+    - issuer: https://token.actions.githubusercontent.com
+      subject: https://github.com/EnactProtocol/*
+```
 
-Project trust is **merged** with global trust:
+**The colon (`:`) is the key:** It tells Enact whether you're trusting a publisher or an auditor.
 
-```typescript
-// Effective trust config = global + project
-{
-  publishers: {
-    direct: [...global.publishers, ...project.publishers]
-  },
-  auditors: {
-    accepted: [...global.auditors, ...project.auditors],
-    required: { ...global.required, ...project.required }
-  },
-  policies: {
-    ...global.policies,
-    ...project.policies  // Project overrides global
-  }
-}
+---
+
+## Default Configuration
+
+```yaml
+# ~/.enact/config.yaml (created on first run)
+trust:
+  publishers:
+    - EnactProtocol  # Trust official Enact tools
+  
+  auditors:
+    - github:EnactProtocol  # Trust official auditor
+  
+  policy: prompt
+  minimum_attestations: 1
 ```
 
 ---
 
-## Team Workflows
+## Example Workflows
 
-### Enterprise Team Example
-
-**Team lead sets up project trust:**
-
-```bash
-cd my-company-project/
-enact trust add auditor "repo:my-company/security"
-enact trust require "*" "repo:my-company/security"
-git add .enact/trusted.json
-git commit -m "Require company security audits for all tools"
-git push
+### Personal Developer
+```yaml
+trust:
+  publishers:
+    - alice  # Trust your own tools
+  auditors:
+    - github:EnactProtocol
+    - github:alice  # Trust your own audits
+  policy: prompt
 ```
 
-**Team members inherit trust config:**
-
 ```bash
-git clone https://github.com/my-company/project
-cd project/
-enact install  # Installs all tools from .enact/tools.json
-
-# Output:
-# ✓ acme-corp/data/processor@v2.1.0 
-#   (audited by my-company/security ✓)
-# ✓ other-org/utils/helper@v1.0.0
-#   (audited by my-company/security ✓)
+# Your workflow
+enact publish .           # Publish to alice/*
+enact sign alice/tool@v1  # Self-attest
+enact install alice/tool  # Installs (trusted publisher)
 ```
 
-All team members automatically get the same trust requirements.
+### Enterprise Security Team
+```yaml
+trust:
+  publishers: []  # Don't auto-trust any publisher
+  
+  auditors:
+    - microsoft:security@company.com
+    - github:company-security/*
+  
+  policy: require_audit
+  minimum_attestations: 1
+```
+
+Only tools audited by internal security team can be installed.
+
+### Open Source Project
+```yaml
+trust:
+  publishers:
+    - my-project  # Trust official project account
+  
+  auditors:
+    - github:EnactProtocol
+    - github:ossf
+    - github:my-project/*
+  
+  policy: require_audit
+```
+
+### Development Mode
+```yaml
+trust:
+  publishers:
+    - alice
+  
+  policy: allow  # Install anything (for testing)
+```
 
 ---
 
 ## Becoming an Auditor
 
-Anyone with a GitHub account can become an auditor.
-
-### 1. Create Audit Repository
-
-```bash
-mkdir my-org-audits
-cd my-org-audits/
-git init
-```
-
-### 2. Review Tools
-
-```bash
-# Download tool to audit
-enact download acme-corp/data/processor@v2.1.0
-
-# Manual review process:
-# - Code review
-# - Security scanning
-# - Compliance checks
-# - Performance testing
-```
-
-### 3. Create Attestation
-
-```bash
-enact attest create \
-  --subject "acme-corp/data/processor@v2.1.0" \
-  --type "https://my-org.com/audit/v1" \
-  --findings "no-critical-issues" \
-  --report-url "https://audits.my-org.com/report/123" \
-  --metadata '{"score": 9.2, "vulnerabilities": 0}'
-```
-
-### 4. Publish Attestation
-
-```bash
-enact attest publish acme-corp/data/processor attestation.bundle
-```
-
-### 5. Share Your Auditor Identity
-
-Tell users to trust your auditor identity:
-
-```bash
-enact trust add auditor "repo:my-org/audits"
-```
-
-### Best Practices for Auditors
-
-**Be transparent:**
-- Publish audit reports publicly
-- Document your audit criteria
-- Explain your methodology
-
-**Be consistent:**
-- Use consistent attestation types
-- Apply uniform standards
-- Update attestations regularly
-
-**Be accountable:**
-- Sign with a dedicated audit repo
-- Track your audit history
-- Respond to questions about audits
+1. **Choose your OIDC identity** (GitHub, Google, etc.)
+2. **Review tools thoroughly**
+   - Review source code (via registry or local install)
+   - Analyze code, run security scans
+   - Test functionality
+3. **Publish attestations**
+   - `enact sign tool@ver` if it passes
+   - `enact report tool@ver` if it fails
+4. **Build reputation**
+   - Be transparent about methodology
+   - Provide detailed reports
+   - Be consistent
+5. **Tell users to trust you**
+   - Document your process
+   - Share your OIDC identity: `provider:identity`
+   - Users add with `enact trust github:your-org`
 
 ---
 
-## First-Time Setup
+## Security Guarantees
 
-When you first run `enact install`, you'll be prompted to configure trust:
+### What Enact Provides
 
-```bash
-$ enact install first-tool/ever
+✅ **Publisher identity** - Verified Enact accounts  
+✅ **Attestation authenticity** - Cryptographic proof via Sigstore  
+✅ **Integrity** - Tools haven't been tampered with  
+✅ **Transparency** - All attestations in public Rekor log  
+✅ **User control** - You choose who to trust  
 
-⚠ No trust configuration found
+### What Enact Does NOT Provide
 
-Enact uses cryptographic signatures to verify tools, but you 
-haven't configured which publishers or auditors you trust yet.
-
-Suggested trusted auditors:
-  [x] EnactProtocol (official Enact audits)
-  [x] OSSF (Open Source Security Foundation)
-  [ ] npm (for npm-ecosystem tools)
-
-Would you like to:
-  [s] Use suggested defaults
-  [c] Configure manually
-  [n] Skip (prompt for each tool)
-
-Choice: █
-```
-
-**Suggested defaults:**
-
-```json
-{
-  "auditors": {
-    "accepted": [
-      "repo:EnactProtocol/audits",
-      "repo:ossf/audits"
-    ]
-  },
-  "policies": {
-    "default": "prompt"
-  }
-}
-```
-
----
-
-## Security Model
-
-### What This Trust System Provides
-
-**Authenticity:**
-- Tools are signed by verified publishers (GitHub identity)
-- Attestations are signed by verified auditors (GitHub identity)
-- Identities cannot be forged (Sigstore/Fulcio)
-
-**Integrity:**
-- Any tampering invalidates signatures
-- Hash verification ensures content hasn't changed
-- Rekor provides tamper-evident log
-
-**Transparency:**
-- All signatures logged in public Rekor
-- Anyone can audit what was signed and when
-- Impossible to backdate signatures
-
-**Flexibility:**
-- Users decide who to trust
-- Multiple auditors can attest independently
-- Namespace-specific requirements for sensitive tools
-
-### What This Trust System Does NOT Provide
-
-**Code Quality:**
-- Signatures prove identity, not quality
-- Audits are subjective (depends on auditor rigor)
-- "Audited" doesn't mean "bug-free"
-
-**Continuous Monitoring:**
-- Attestations are point-in-time
-- Tools can be updated after audit
-- Re-audit required for new versions
-
-**Guaranteed Safety:**
-- Trust decisions are yours to make
-- Attackers could compromise GitHub accounts
-- Always review critical tools yourself
+❌ **Code quality** - Attestations don't guarantee bug-free code  
+❌ **Auditor competence** - You must vet auditors  
+❌ **Continuous monitoring** - Point-in-time attestations only  
+❌ **Legal warranties** - Technical verification, not legal liability  
 
 ---
 
 ## FAQ
 
-### Q: Who can sign tools?
+### Q: What's the difference between publishers and auditors?
 
-Anyone with a GitHub account. Sigstore uses GitHub OAuth for authentication.
+**A:** Publishers are Enact accounts that upload tools. Auditors are OIDC identities that cryptographically sign attestations about tools. The format tells them apart: `alice` is a publisher, `github:alice` is an auditor.
 
-### Q: Who can audit tools?
+### Q: Why separate them?
 
-Anyone with a GitHub account. Auditors are just publishers who review and attest to other people's tools.
+**A:** Flexibility. You might trust a publisher to create good tools, or you might only trust third-party auditors. Or both! You can also have multiple team members attest using different OIDC identities while publishing from one Enact account.
 
-### Q: Can I trust tools without audits?
+### Q: Can publishers and auditors be the same person?
 
-Yes! You can:
-- Trust specific publishers directly
-- Set `"default": "allow"` in policies
-- Manually approve tools when prompted
+**A:** Yes! If you trust Enact user "alice" as a publisher AND trust "github:alice" as an auditor, you're trusting the same person in both roles. But they're technically separate systems.
 
-### Q: What if an auditor becomes untrustworthy?
+### Q: Do I need to configure both publishers and auditors?
 
-Remove them from your trust config:
+**A:** No. You can:
+- Only trust publishers (install their tools without audits)
+- Only trust auditors (any tool is OK if audited)
+- Trust both (maximum flexibility)
+- Trust neither (prompt for everything)
 
-```bash
-enact trust remove auditor "repo:sketchy-auditor/*"
-```
+### Q: What if I trust a publisher but they publish a bad tool?
 
-Existing installed tools remain, but new installs won't trust that auditor.
+**A:** Remove them from your trusted publishers list: `enact trust -r alice`. You can also check if trusted auditors have reported issues with specific tools.
 
-### Q: Can I require multiple audits?
+### Q: Can attestations be faked?
 
-Yes! Use namespace-specific required audits:
+**A:** No. Sigstore provides cryptographic proof. Attestations are signed with OIDC identities and logged in Rekor's transparency log. Tampering is cryptographically detectable.
+
+### Q: What happens if an auditor reports a tool as failed?
+
+**A:** Failed attestations are still attestations. If a trusted auditor reports a tool, installation will be blocked/prompted even if other auditors passed it. Failed attestations create an audit trail.
+
+### Q: How do I see why a tool was reported?
+
+**A:** Use `enact trust check tool@version` to show the trust status, attestations, and any reported issues.
+
+### Q: What OIDC providers are supported?
+
+**A:** Any provider that Sigstore accepts: GitHub, Google, Microsoft, GitLab, and custom OIDC servers. The CLI will guide you through authentication.
+
+### Q: How does the colon (`:`) work in trust identifiers?
+
+**A:** The colon separates the OIDC provider from the identity. `github:alice` means "GitHub user alice". No colon means it's an Enact username (publisher). This lets the CLI automatically infer whether you're trusting a publisher or auditor.
+
+---
+
+## Technical Details
+
+### Attestation Structure
+
+Attestations follow the in-toto statement format:
 
 ```json
 {
-  "auditors": {
-    "required": {
-      "critical/*": [
-        "repo:auditor1/*",
-        "repo:auditor2/*"
-      ]
+  "_type": "https://in-toto.io/Statement/v1",
+  "subject": [{
+    "name": "pkg:enact/alice/utils/greeter@v1.0",
+    "digest": {
+      "sha256": "abc123..."
     }
+  }],
+  "predicateType": "https://enactprotocol.com/audit/v1",
+  "predicate": {
+    "status": "passed",
+    "audit_date": "2025-01-15T10:30:00Z",
+    "reason": "No security issues found",
+    "report_url": "https://audits.example.com/report-123"
   }
 }
 ```
 
-### Q: What's the difference between "accepted" and "required" auditors?
+This is signed with Sigstore and stored in the registry with the certificate containing:
+- Issuer (OIDC provider URL)
+- Subject (user/workflow identity)
+- Email (if available)
 
-- **Accepted**: ANY of these auditors is sufficient
-- **Required**: ALL of these auditors are necessary (for specific namespaces)
+### Trust Matching
 
-### Q: Can I run my own auditor?
+When verifying trust, Enact:
 
-Yes! Create a GitHub repo, audit tools, and publish attestations. Others can choose to trust your auditor identity.
-
-### Q: How do I know if an audit is recent?
-
-Set `max_attestation_age_days` in your policies:
-
-```json
-{
-  "policies": {
-    "max_attestation_age_days": 180
-  }
-}
-```
-
-### Q: Can publishers fake audits?
-
-No. Each attestation is signed by the auditor's GitHub identity (via Sigstore). Publishers cannot forge auditor signatures.
-
-### Q: What if Rekor goes down?
-
-Sigstore bundles include all verification data (certificate, signature, inclusion proof). Verification works offline using the bundle alone.
+1. Extracts OIDC identity from Sigstore certificate
+2. Checks if it matches any trusted auditor pattern
+3. Supports wildcards: `github:my-org/*` matches any identity from that org
+4. Verifies Sigstore signature cryptographically
+5. Checks Rekor transparency log for tampering
 
 ---
 
-## Examples
+## Learn More
 
-### Example 1: Personal Developer
-
-```json
-// ~/.enact/trusted.json
-{
-  "publishers": {
-    "direct": [
-      "repo:EnactProtocol/*"
-    ]
-  },
-  "auditors": {
-    "accepted": [
-      "repo:EnactProtocol/audits",
-      "repo:ossf/audits"
-    ]
-  },
-  "policies": {
-    "default": "prompt"
-  }
-}
-```
-
-**Behavior:**
-- Trusts official Enact tools
-- Trusts tools audited by EnactProtocol or OSSF
-- Prompts for everything else
-
----
-
-### Example 2: Enterprise Security Team
-
-```json
-// .enact/trusted.json (committed to company repos)
-{
-  "publishers": {
-    "direct": [
-      "repo:my-company/*"
-    ]
-  },
-  "auditors": {
-    "accepted": [
-      "repo:my-company/security"
-    ],
-    "required": {
-      "*": ["repo:my-company/security"]
-    }
-  },
-  "policies": {
-    "default": "deny",
-    "max_attestation_age_days": 90
-  }
-}
-```
-
-**Behavior:**
-- Only trusts internal tools or audited-by-company tools
-- REQUIRES company security audit for ALL tools
-- Denies everything else by default
-- Attestations must be <90 days old
-
----
-
-### Example 3: Open Source Project
-
-```json
-// .enact/trusted.json
-{
-  "auditors": {
-    "accepted": [
-      "repo:EnactProtocol/audits",
-      "repo:ossf/audits",
-      "repo:cncf/audits"
-    ]
-  },
-  "policies": {
-    "default": "prompt",
-    "min_auditors": 1
-  }
-}
-```
-
-**Behavior:**
-- Trusts tools audited by major foundations
-- Requires at least 1 audit
-- Prompts for tools without audits
-
----
-
-## Related Documentation
-
-- [Sigstore Implementation Guide](SIGSTORE.md) - How signatures work
-- [Complete Protocol Specification](SPEC.md) - Full technical details
-- [CLI Commands Reference](COMMANDS.md) - All available commands
+- **Sigstore Documentation** - https://docs.sigstore.dev
+- **Rekor Transparency Log** - https://rekor.sigstore.dev
+- **OIDC Explained** - https://openid.net/connect/
+- **Enact Registry** - https://enact.io
 
 ---
 
