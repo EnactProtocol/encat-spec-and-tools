@@ -17,7 +17,7 @@ This unified format serves as the single source of truth for both AI models and 
 **Example `enact.md` structure:**
 ```markdown
 ---
-enact: "1.0.0"
+enact: "2.0.0"
 name: "alice/utils/greeter"
 description: "Greets the user by name"
 command: "echo 'Hello, ${name}!'"
@@ -487,7 +487,7 @@ All Enact tools are defined in a single **`enact.md`** file — a Markdown docum
 ### Example:
 ```markdown
 ---
-enact: "1.0.0"
+enact: "2.0.0"
 name: "org/category/tool"
 description: "Tool description"
 command: "python src/main.py ${args}"  # Optional

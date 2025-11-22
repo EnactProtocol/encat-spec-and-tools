@@ -44,7 +44,7 @@ Create an `enact.md` manifest:
 
 ```markdown
 ---
-enact: "1.0.0"
+enact: "2.0.0"
 name: "alice/utils/greeter"
 description: "Greets the user by name"
 command: "echo 'Hello, ${name}!'"

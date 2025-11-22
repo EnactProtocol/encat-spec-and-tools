@@ -509,7 +509,7 @@ cd my-tool-project
 # 2. Create enact.md
 cat > enact.md <<'EOF'
 ---
-enact: "1.0.0"
+enact: "2.0.0"
 name: "myorg/utils/my-tool"
 description: "My tool"
 tags: ["utility"]
